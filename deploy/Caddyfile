@@ -1,0 +1,21 @@
+{
+  email tarek.kekhia@emeraldlake.io
+}
+
+from-zero.emeraldlake.io {
+  encode zstd gzip
+  reverse_proxy 127.0.0.1:3717
+
+  # Sensible defaults
+  request_body {
+    max_size 5MB
+  }
+
+  log {
+    output file /var/log/caddy/from-zero.log {
+      roll_size 10mb
+      roll_keep 5
+    }
+    format console
+  }
+}

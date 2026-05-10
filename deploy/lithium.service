@@ -1,0 +1,29 @@
+[Unit]
+Description=Lithium learning workbench (Next.js)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=lithium
+Group=lithium
+WorkingDirectory=/srv/lithium/web
+EnvironmentFile=/etc/lithium/lithium.env
+ExecStart=/usr/bin/npm start
+Restart=always
+RestartSec=3
+KillMode=control-group
+
+# Hardening
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/srv/lithium /var/lib/lithium
+
+# Logs go to journald
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

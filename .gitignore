@@ -1,0 +1,44 @@
+# dependencies
+node_modules/
+
+# build output
+.next/
+out/
+dist/
+.turbo/
+*.tsbuildinfo
+
+# env
+.env
+.env.local
+.env*.local
+
+# sqlite
+web/data/*.db
+web/data/*.db-journal
+web/data/*.db-wal
+web/data/*.db-shm
+
+# zero/ runtime artefacts (PDF tooling output)
+zero/_pdf-output/
+zero/_pdf-tooling/node_modules/
+
+# python
+__pycache__/
+*.pyc
+*.pyo
+
+# local session/automation cruft at repo root
+.playwright-mcp/
+*.png
+*.jpg
+*.jpeg
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# editor
+.vscode/
+.idea/

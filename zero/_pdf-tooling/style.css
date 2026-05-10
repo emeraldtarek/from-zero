@@ -1,0 +1,480 @@
+/* Lithium Learning Project — print stylesheet
+   Color theme: deep cobalt-blue (scientific / water) + crimson (lithium flame test)
+*/
+
+@page {
+  size: Letter;
+  margin: 22mm 18mm 22mm 18mm;
+
+  @top-left {
+    content: element(pageHeader);
+  }
+  @bottom-left {
+    content: element(pageFooter);
+  }
+}
+@page :first {
+  margin: 0;
+  @top-left { content: none; }
+  @bottom-left { content: none; }
+}
+
+:root {
+  /* Lithium-themed palette */
+  --brand-primary: #0c4a6e;   /* deep cobalt-blue (sky-900 ish): scientific, water */
+  --brand-accent:  #dc2626;   /* crimson red: lithium's flame-test color */
+  --brand-deep:    #082f49;   /* even deeper variant for headings */
+
+  --ink:       #0f172a;       /* near-black slate */
+  --ink-soft:  #334155;       /* slate-700 */
+  --muted:     #64748b;       /* slate-500 */
+  --line:      #e2e8f0;       /* slate-200 */
+  --bg-soft:   #f1f5f9;       /* slate-100 */
+  --bg-tint:   #f0f9ff;       /* sky-50, super pale blue */
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  color: var(--ink);
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-size: 10.5pt;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ----- Running header / footer ----- */
+.page-header {
+  position: running(pageHeader);
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--line);
+  font-size: 8.5pt;
+  color: var(--muted);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.page-header .left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  white-space: nowrap;
+}
+.page-header .left span { white-space: nowrap; }
+.page-header .left img {
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  object-fit: contain;
+  vertical-align: middle;
+}
+.page-header .left .nuclei {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%,
+    var(--brand-accent) 0%,
+    var(--brand-accent) 18%,
+    var(--brand-primary) 60%,
+    var(--brand-deep) 100%);
+  box-shadow: inset 0 0 1px rgba(0,0,0,0.25);
+  vertical-align: middle;
+}
+.page-header strong {
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.page-footer {
+  position: running(pageFooter);
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 6px;
+  border-top: 1px solid var(--line);
+  font-size: 8.5pt;
+  color: var(--muted);
+}
+.page-footer .accent {
+  height: 2px;
+  width: 36px;
+  background: linear-gradient(90deg, var(--brand-primary), var(--brand-accent));
+  border-radius: 2px;
+  display: inline-block;
+  margin-right: 10px;
+  vertical-align: middle;
+}
+.pageno::before { content: counter(page); }
+
+/* ----- Cover page ----- */
+.cover {
+  page-break-after: always;
+  height: 100vh;
+  width: 100vw;
+  padding: 32mm 22mm 22mm 22mm;
+  background:
+    radial-gradient(1200px 600px at 90% -10%, rgba(12, 74, 110, 0.10), transparent 60%),
+    radial-gradient(1000px 500px at -10% 110%, rgba(220, 38, 38, 0.10), transparent 60%),
+    #ffffff;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+.cover .top {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+/* "Logo": Li periodic-table tile (image) */
+.cover .top .logo {
+  width: 64px;
+  height: 64px;
+  border-radius: 14px;
+  flex: 0 0 auto;
+  object-fit: contain;
+  display: block;
+  /* fallback look if no image is provided */
+  background: linear-gradient(135deg, var(--brand-deep), var(--brand-primary) 60%, var(--brand-accent));
+  position: relative;
+}
+.cover .top .logo:not(img)::before {
+  content: "Li";
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  font-weight: 800;
+  font-size: 22pt;
+  letter-spacing: -0.02em;
+}
+.cover .top .brand { display: flex; flex-direction: column; }
+.cover .top .brand .name {
+  font-size: 14pt;
+  font-weight: 700;
+  color: var(--ink);
+  letter-spacing: -0.01em;
+}
+.cover .top .brand .tag {
+  font-size: 9pt;
+  color: var(--muted);
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+}
+
+.cover .middle { margin-top: 24mm; }
+.cover .eyebrow {
+  font-size: 9.5pt;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--brand-primary);
+  font-weight: 700;
+  margin-bottom: 14px;
+}
+.cover h1 {
+  margin: 0 0 6px 0;
+  font-size: 32pt;
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+}
+.cover h1 .accent-bar {
+  display: inline-block;
+  width: 64px;
+  height: 6px;
+  border-radius: 6px;
+  background: linear-gradient(90deg, var(--brand-primary), var(--brand-accent));
+  vertical-align: middle;
+  margin-right: 14px;
+}
+.cover h2.subtitle {
+  margin: 6px 0 0 0;
+  font-size: 14pt;
+  font-weight: 500;
+  color: var(--ink-soft);
+  line-height: 1.35;
+}
+
+.cover .meta {
+  margin-top: 18mm;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px 24px;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  padding: 18px 0;
+}
+.cover .meta .field .label {
+  font-size: 8.5pt;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+  margin-bottom: 4px;
+}
+.cover .meta .field .value {
+  font-size: 11pt;
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.cover .bottom {
+  font-size: 8.5pt;
+  color: var(--muted);
+  line-height: 1.5;
+}
+.cover .bottom .stripe {
+  height: 4px;
+  width: 100%;
+  background: linear-gradient(90deg, var(--brand-primary), var(--brand-accent));
+  border-radius: 4px;
+  margin-bottom: 12px;
+}
+
+/* ----- Body content (rendered from markdown) ----- */
+.body { padding: 0; }
+
+.body h1 {
+  font-size: 20pt;
+  font-weight: 800;
+  color: var(--brand-deep);
+  margin: 22px 0 12px 0;
+  letter-spacing: -0.01em;
+  page-break-after: avoid;
+  border-bottom: 2px solid var(--brand-primary);
+  padding-bottom: 6px;
+}
+.body h2 {
+  font-size: 14pt;
+  font-weight: 700;
+  color: var(--ink);
+  margin: 22px 0 8px 0;
+  letter-spacing: -0.005em;
+  page-break-after: avoid;
+  border-left: 4px solid var(--brand-primary);
+  padding-left: 10px;
+}
+.body h3 {
+  font-size: 11.5pt;
+  font-weight: 700;
+  color: var(--ink-soft);
+  margin: 16px 0 6px 0;
+  page-break-after: avoid;
+}
+.body h4 {
+  font-size: 10.5pt;
+  font-weight: 700;
+  color: var(--brand-accent);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin: 14px 0 4px 0;
+}
+
+.body p { margin: 0 0 8px 0; }
+
+.body ul, .body ol {
+  margin: 4px 0 10px 0;
+  padding-left: 22px;
+}
+.body ul li, .body ol li { margin-bottom: 4px; }
+.body ul li::marker { color: var(--brand-primary); }
+.body ol li::marker { color: var(--brand-primary); font-weight: 700; }
+
+.body a {
+  color: var(--brand-primary);
+  text-decoration: none;
+  border-bottom: 1px solid rgba(12, 74, 110, 0.30);
+}
+
+.body strong { color: var(--ink); font-weight: 700; }
+.body em { color: var(--ink-soft); }
+
+.body code {
+  font-family: "SF Mono", "Menlo", "Consolas", monospace;
+  font-size: 9.5pt;
+  background: var(--bg-soft);
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  padding: 1px 5px;
+  color: var(--brand-deep);
+}
+.body pre {
+  background: var(--bg-soft);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--brand-primary);
+  border-radius: 6px;
+  padding: 10px 12px;
+  font-size: 9.5pt;
+  line-height: 1.45;
+  overflow-x: auto;
+  page-break-inside: avoid;
+}
+.body pre code {
+  background: transparent;
+  border: 0;
+  padding: 0;
+}
+
+.body blockquote {
+  margin: 10px 0;
+  padding: 10px 14px;
+  background: var(--bg-tint);
+  border-left: 3px solid var(--brand-accent);
+  border-radius: 4px;
+  color: var(--ink-soft);
+  font-size: 10pt;
+  page-break-inside: avoid;
+}
+.body blockquote p:last-child { margin-bottom: 0; }
+
+.body table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 10px 0 14px 0;
+  font-size: 10pt;
+  page-break-inside: avoid;
+}
+.body table th {
+  background: var(--brand-deep);
+  color: #fff;
+  text-align: left;
+  font-weight: 600;
+  padding: 8px 10px;
+  font-size: 9.5pt;
+  letter-spacing: 0.02em;
+}
+.body table td {
+  border-bottom: 1px solid var(--line);
+  padding: 8px 10px;
+  vertical-align: top;
+}
+.body table tr:nth-child(even) td { background: var(--bg-soft); }
+
+.body hr {
+  border: 0;
+  border-top: 1px solid var(--line);
+  margin: 18px 0;
+}
+
+/* Key/value table (raw HTML usage in MD) */
+.terms-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 8px 0 12px 0;
+  font-size: 10pt;
+}
+.terms-table td {
+  border: 1px solid var(--line);
+  padding: 8px 10px;
+  vertical-align: top;
+}
+.terms-table td.label {
+  width: 32%;
+  background: var(--bg-soft);
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-size: 8.5pt;
+  font-weight: 600;
+}
+.terms-table td.value { color: var(--ink); font-weight: 500; }
+
+/* Callout */
+.callout {
+  background: var(--bg-tint);
+  border-left: 3px solid var(--brand-primary);
+  padding: 10px 12px;
+  border-radius: 4px;
+  font-size: 9.5pt;
+  color: var(--ink-soft);
+  margin: 8px 0 12px 0;
+}
+
+.small { font-size: 9pt; color: var(--muted); }
+
+/* Make raw LaTeX delimiters less visually offensive when math fails to render */
+.body p code, .body li code, .body td code { white-space: nowrap; }
+
+/* ----- Math (rendered as HTML+Unicode for reliable display) ----- */
+.math-inline {
+  font-family: "Cambria Math", "STIX Two Math", "Latin Modern Math",
+               "Times New Roman", Georgia, serif;
+  font-style: italic;
+  white-space: nowrap;
+}
+.math-display {
+  display: block;
+  margin: 14px 0;
+  padding: 6px 8px;
+  text-align: center;
+  font-family: "Cambria Math", "STIX Two Math", "Latin Modern Math",
+               "Times New Roman", Georgia, serif;
+  font-style: italic;
+  font-size: 1.08em;
+  page-break-inside: avoid;
+  color: var(--ink);
+}
+
+/* Numbers, operators, and operator names should not be italicized */
+.math-inline sup, .math-display sup,
+.math-inline sub, .math-display sub {
+  font-style: normal;
+  font-size: 0.72em;
+  line-height: 0;
+  position: relative;
+}
+.math-inline sup, .math-display sup { vertical-align: 0.55em; }
+.math-inline sub, .math-display sub { vertical-align: -0.30em; }
+
+.math-inline .op, .math-display .op {
+  font-style: normal;
+  margin: 0 0.15em;
+}
+
+/* Stacked fraction (used in display mode) */
+.frac {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  vertical-align: middle;
+  margin: 0 0.15em;
+  font-style: normal;
+}
+.frac .num {
+  display: block;
+  border-bottom: 1px solid currentColor;
+  padding: 0 0.35em 1px 0.35em;
+  font-style: italic;
+}
+.frac .den {
+  display: block;
+  padding: 1px 0.35em 0 0.35em;
+  font-style: italic;
+}
+
+/* Square root */
+.sqrt {
+  font-style: normal;
+  white-space: nowrap;
+}
+.sqrt .rooted {
+  border-top: 1px solid currentColor;
+  padding-top: 1px;
+  font-style: italic;
+}
+
+.math-fallback {
+  background: #fff7ed;
+  border: 1px dashed var(--brand-accent);
+  color: var(--brand-accent);
+  padding: 1px 4px;
+}
