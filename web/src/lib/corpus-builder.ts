@@ -170,10 +170,16 @@ export function buildCorpusIndex(): { added: number; total: number; pages: numbe
         stack.push({ ...h, slug, parent_slug: parent ? parent.slug : null, line_end });
       }
 
+      const cacheLookup = db.prepare(
+        "SELECT summary FROM summary_cache WHERE content_hash = ?",
+      );
+
       for (const n of nodes) {
         const sectionLines = lines.slice(n.line - 1, n.line_end);
         const sectionText = sectionLines.join("\n");
-        const summary = firstSentence(sectionText);
+        const content_hash = hash(sectionText);
+        const cached = cacheLookup.get(content_hash) as { summary: string } | undefined;
+        const summary = cached ? cached.summary : firstSentence(sectionText);
         upsert.run({
           slug: n.slug,
           page_slug: page.slug,
@@ -188,7 +194,7 @@ export function buildCorpusIndex(): { added: number; total: number; pages: numbe
           sort_order: globalOrder++,
           summary: summary || null,
           word_count: wordCount(sectionText),
-          content_hash: hash(sectionText),
+          content_hash,
         });
       }
     }

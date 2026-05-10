@@ -142,6 +142,16 @@ function migrate(db: Database.Database) {
     CREATE INDEX IF NOT EXISTS idx_corpus_node_phase ON corpus_node(phase_id, sort_order);
     CREATE INDEX IF NOT EXISTS idx_corpus_node_page ON corpus_node(page_slug, line_start);
     CREATE INDEX IF NOT EXISTS idx_corpus_node_parent ON corpus_node(parent_slug);
+
+    -- Per-content-hash cache so LLM-written summaries persist across rebuilds.
+    -- Keyed by the section's content_hash; when a section's text changes, a
+    -- new hash is computed and a fresh summary will be generated on next run.
+    CREATE TABLE IF NOT EXISTS summary_cache (
+      content_hash TEXT PRIMARY KEY,
+      summary TEXT NOT NULL,
+      model TEXT,
+      generated_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
   `);
 }
 
