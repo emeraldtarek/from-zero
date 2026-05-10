@@ -11,7 +11,15 @@ import {
   upsertGlossaryEntry,
 } from "@/lib/repos";
 import { ensureSeeded, getPageBySlug } from "@/lib/content-loader";
-import { listConceptsByPhase } from "@/lib/repos";
+import {
+  listConceptsByPhase,
+  listGlossary,
+} from "@/lib/repos";
+import {
+  getSection,
+  renderOutlineMarkdown,
+  searchCorpus,
+} from "@/lib/corpus-index";
 import { streamChat, type AnthropicTool } from "@/lib/llm";
 import {
   TUTOR_SYSTEM_PROMPT,
@@ -31,6 +39,81 @@ const Body = z.object({
 
 function buildTools(ctx: { sessionId: number; page_slug?: string | null }): AnthropicTool[] {
   return [
+    {
+      ...TUTOR_TOOL_SCHEMAS.get_corpus_outline,
+      zod_shape: TUTOR_TOOL_ZOD.get_corpus_outline.shape as unknown as Record<string, unknown>,
+      handler: async (input) => {
+        const data = input as {
+          phase_id?: string | null;
+          max_level?: number | null;
+          include_summaries?: boolean | null;
+        };
+        const md = renderOutlineMarkdown({
+          phase_id: data.phase_id ?? undefined,
+          maxLevel: data.max_level ?? 2,
+          summaryLen: data.include_summaries === false ? 0 : 80,
+        });
+        return { ok: true, outline_markdown: md, byte_length: md.length };
+      },
+    },
+    {
+      ...TUTOR_TOOL_SCHEMAS.get_section,
+      zod_shape: TUTOR_TOOL_ZOD.get_section.shape as unknown as Record<string, unknown>,
+      handler: async (input) => {
+        const data = input as { slug: string };
+        const r = getSection(data.slug);
+        return r;
+      },
+    },
+    {
+      ...TUTOR_TOOL_SCHEMAS.search_corpus,
+      zod_shape: TUTOR_TOOL_ZOD.search_corpus.shape as unknown as Record<string, unknown>,
+      handler: async (input) => {
+        const data = input as { query: string; limit?: number | null };
+        const hits = searchCorpus(data.query, data.limit ?? 8);
+        return { ok: true, hits };
+      },
+    },
+    {
+      ...TUTOR_TOOL_SCHEMAS.list_glossary,
+      zod_shape: TUTOR_TOOL_ZOD.list_glossary.shape as unknown as Record<string, unknown>,
+      handler: async (input) => {
+        const data = input as { prefix?: string | null };
+        const rows = listGlossary(data.prefix ?? undefined);
+        return {
+          ok: true,
+          terms: rows.map((r) => ({
+            term: r.term,
+            symbol: r.symbol,
+            units: r.units,
+            short_definition: r.definition.slice(0, 140),
+          })),
+        };
+      },
+    },
+    {
+      ...TUTOR_TOOL_SCHEMAS.list_concepts,
+      zod_shape: TUTOR_TOOL_ZOD.list_concepts.shape as unknown as Record<string, unknown>,
+      handler: async (input) => {
+        const data = input as {
+          phase_id?: string | null;
+          status?: "todo" | "exposed" | "comfortable" | "solid" | null;
+        };
+        const rows = listConceptsByPhase(data.phase_id ?? undefined);
+        const filtered = data.status
+          ? rows.filter((c) => c.status === data.status)
+          : rows;
+        return {
+          ok: true,
+          concepts: filtered.map((c) => ({
+            slug: c.slug,
+            label: c.label,
+            section: c.section,
+            status: c.status,
+          })),
+        };
+      },
+    },
     {
       ...TUTOR_TOOL_SCHEMAS.add_glossary_term,
       zod_shape: TUTOR_TOOL_ZOD.add_glossary_term.shape as unknown as Record<string, unknown>,
@@ -158,7 +241,14 @@ export async function POST(req: NextRequest) {
         .map((c) => `- \`${c.slug}\` (${c.status}) — ${c.label}`)
         .join("\n")
     : "";
-  const systemWithConcepts = TUTOR_SYSTEM_PROMPT + conceptsBlock;
+
+  // PageIndex-style corpus outline. Lean: H1 only with first-sentence
+  // summaries (~2 KB). The model can call `get_corpus_outline(max_level=2)` to
+  // drill into a phase, or `get_section(slug)` to fetch any section verbatim.
+  const outlineMd = renderOutlineMarkdown({ maxLevel: 1, summaryLen: 140 });
+  const outlineBlock = `\n\n# Corpus outline (table of contents)\nEvery page in the curriculum, slug → one-sentence summary. The current learner-visible page is included verbatim above; for ANY OTHER page or section, call:\n- \`get_corpus_outline({ phase_id?, max_level: 2 | 3 })\` to expand a phase down to subsections,\n- \`search_corpus(query)\` to find sections by keyword,\n- \`get_section(slug)\` to fetch verbatim Markdown of any node.\nDo NOT guess slugs — the outline + search are authoritative.\n\n${outlineMd}`;
+
+  const systemWithConcepts = TUTOR_SYSTEM_PROMPT + outlineBlock + conceptsBlock;
   const history = listChatMessages(session.id);
   // The user message we just added is the last one; remove it from history.
   const history_for_llm = history

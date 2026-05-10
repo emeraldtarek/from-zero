@@ -236,4 +236,9 @@ export function ensureSeeded() {
   if (pageCount === 0) syncPagesToDb();
   const conceptCount = (db.prepare("SELECT COUNT(*) AS n FROM concepts").get() as { n: number }).n;
   if (conceptCount === 0) syncConceptsToDb();
+  const nodeCount = (db.prepare("SELECT COUNT(*) AS n FROM corpus_node").get() as { n: number }).n;
+  if (nodeCount === 0) {
+    // Lazy-import to avoid pulling fs/crypto into edge bundles.
+    import("./corpus-builder").then((m) => m.buildCorpusIndex()).catch(() => {});
+  }
 }

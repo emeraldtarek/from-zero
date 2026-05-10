@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "next lint",
     "ingest": "tsx scripts/ingest.ts",
+    "build-index": "tsx scripts/build-corpus-index.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

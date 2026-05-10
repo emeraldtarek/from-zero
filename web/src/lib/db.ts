@@ -120,6 +120,28 @@ function migrate(db: Database.Database) {
       key TEXT PRIMARY KEY,
       value TEXT NOT NULL
     );
+
+    CREATE TABLE IF NOT EXISTS corpus_node (
+      slug TEXT PRIMARY KEY,
+      page_slug TEXT NOT NULL,
+      phase_id TEXT NOT NULL,
+      phase_number INTEGER NOT NULL,
+      file TEXT NOT NULL,
+      parent_slug TEXT,
+      level INTEGER NOT NULL,
+      title TEXT NOT NULL,
+      line_start INTEGER NOT NULL,
+      line_end INTEGER NOT NULL,
+      sort_order INTEGER NOT NULL,
+      summary TEXT,
+      word_count INTEGER NOT NULL DEFAULT 0,
+      content_hash TEXT NOT NULL,
+      updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_corpus_node_phase ON corpus_node(phase_id, sort_order);
+    CREATE INDEX IF NOT EXISTS idx_corpus_node_page ON corpus_node(page_slug, line_start);
+    CREATE INDEX IF NOT EXISTS idx_corpus_node_parent ON corpus_node(parent_slug);
   `);
 }
 
@@ -205,4 +227,22 @@ export type ChatMessageRow = {
   concept_slug: string | null;
   tool_calls: string | null;
   created_at: string;
+};
+
+export type CorpusNodeRow = {
+  slug: string;
+  page_slug: string;
+  phase_id: string;
+  phase_number: number;
+  file: string;
+  parent_slug: string | null;
+  level: number;
+  title: string;
+  line_start: number;
+  line_end: number;
+  sort_order: number;
+  summary: string | null;
+  word_count: number;
+  content_hash: string;
+  updated_at: string;
 };
