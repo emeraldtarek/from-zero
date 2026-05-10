@@ -152,6 +152,17 @@ function migrate(db: Database.Database) {
       model TEXT,
       generated_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
+
+    -- Full-text-search index over corpus nodes. Rebuilt by corpus-builder
+    -- alongside corpus_node. Standalone (not contentless) so the indexed
+    -- columns are stored verbatim and bm25 ranking can run.
+    CREATE VIRTUAL TABLE IF NOT EXISTS corpus_fts USING fts5(
+      slug UNINDEXED,
+      title,
+      summary,
+      content,
+      tokenize = 'porter unicode61'
+    );
   `);
 }
 

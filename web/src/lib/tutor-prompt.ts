@@ -84,9 +84,9 @@ export const TUTOR_TOOL_ZOD = {
   },
   search_corpus: {
     description:
-      "Substring + token-overlap search over node titles and summaries. Returns up to N relevant nodes ranked by score. Use when you don't know the exact slug for a topic but know what to look for.",
+      "FTS5-backed search across node titles, summaries, and verbatim section text. BM25-ranked, with Porter stemming (so 'isotopes' and 'isotopic' match the same forms). Use when you don't know the exact slug; pass 2–5 substantive keywords.",
     shape: {
-      query: z.string().describe("A short search query (e.g., 'crown ether lithium')."),
+      query: z.string().describe("Keywords (e.g., 'crown ether lithium')."),
       limit: z
         .number()
         .int()

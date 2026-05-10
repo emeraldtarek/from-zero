@@ -116,7 +116,7 @@ server.registerTool(
   {
     title: "Search corpus",
     description:
-      "Substring + token-overlap search over node titles and summaries. Returns ranked hits.",
+      "FTS5-backed search across node titles, summaries, and verbatim section text. BM25-ranked with Porter stemming. Returns ranked hits with score + summary snippet.",
     inputSchema: {
       query: z.string(),
       limit: z.number().int().min(1).max(20).optional(),

@@ -171,45 +171,96 @@ export type SearchHit = {
 };
 
 /**
- * Substring + token-overlap search across titles and summaries. No vectors.
- * Adequate for our small corpus; replaceable with FTS5 later if it gets slow.
+ * Sanitize an arbitrary user query for FTS5 MATCH. We split on whitespace,
+ * drop punctuation/operators (so a stray `-` or `(` doesn't break parsing),
+ * quote each remaining token to force a phrase-literal match, and OR-join
+ * them. Tokens shorter than 2 chars are dropped.
+ */
+function toFtsQuery(raw: string): string {
+  const tokens = raw
+    .toLowerCase()
+    .split(/[^\p{Letter}\p{Number}]+/u)
+    .filter((t) => t.length >= 2);
+  if (tokens.length === 0) return "";
+  return tokens.map((t) => `"${t.replace(/"/g, "")}"`).join(" OR ");
+}
+
+/**
+ * FTS5-backed search across node titles, summaries, and verbatim section
+ * text. Ranked by bm25 (lower = better; we negate to expose `score` where
+ * higher = better, matching the prior contract). Falls back to a tiny
+ * substring scan if the FTS query is empty (e.g., all-stopwords) or if the
+ * virtual table happens to be missing for some reason.
  */
 export function searchCorpus(query: string, limit = 8): SearchHit[] {
-  const q = query.trim().toLowerCase();
+  const q = query.trim();
   if (!q) return [];
-  const tokens = Array.from(
-    new Set(q.split(/\s+/).filter((t) => t.length >= 3)),
-  );
+  const fts = toFtsQuery(q);
+  if (!fts) return [];
 
-  const rows = getDb()
-    .prepare(
-      `SELECT slug, title, page_slug, phase_id, level, summary
-         FROM corpus_node`,
-    )
-    .all() as Array<{
-    slug: string;
-    title: string;
-    page_slug: string;
-    phase_id: string;
-    level: number;
-    summary: string | null;
-  }>;
+  const db = getDb();
+  try {
+    const rows = db
+      .prepare(
+        `SELECT n.slug,
+                n.title,
+                n.page_slug,
+                n.phase_id,
+                n.level,
+                n.summary,
+                bm25(corpus_fts, 8.0, 4.0, 1.0) AS bm25_score
+           FROM corpus_fts
+           JOIN corpus_node n ON n.slug = corpus_fts.slug
+           WHERE corpus_fts MATCH ?
+           ORDER BY bm25_score ASC
+           LIMIT ?`,
+      )
+      .all(fts, limit) as Array<{
+      slug: string;
+      title: string;
+      page_slug: string;
+      phase_id: string;
+      level: number;
+      summary: string | null;
+      bm25_score: number;
+    }>;
 
-  const scored = rows
-    .map((r) => {
-      const hay = `${r.title} ${r.summary ?? ""} ${r.slug}`.toLowerCase();
-      let score = 0;
-      if (hay.includes(q)) score += 5;
-      for (const t of tokens) if (hay.includes(t)) score += 1;
-      // Prefer deeper sections (more specific) over root pages.
-      if (score > 0 && r.level > 1) score += 0.25;
-      return { ...r, score };
-    })
-    .filter((r) => r.score > 0)
-    .sort((a, b) => b.score - a.score)
-    .slice(0, limit);
-
-  return scored;
+    return rows.map((r) => {
+      const { bm25_score, ...rest } = r;
+      // Normalize: bm25 is unbounded negative-ish for good matches. Expose
+      // a positive `score` so callers can keep "higher = better".
+      const score = Math.round((10 + -1 * bm25_score) * 100) / 100;
+      return { ...rest, score };
+    });
+  } catch {
+    // Last-resort fallback: substring scan. Should not happen in practice.
+    const tokens = Array.from(
+      new Set(q.toLowerCase().split(/\s+/).filter((t) => t.length >= 3)),
+    );
+    const all = db
+      .prepare(
+        `SELECT slug, title, page_slug, phase_id, level, summary FROM corpus_node`,
+      )
+      .all() as Array<{
+      slug: string;
+      title: string;
+      page_slug: string;
+      phase_id: string;
+      level: number;
+      summary: string | null;
+    }>;
+    return all
+      .map((r) => {
+        const hay = `${r.title} ${r.summary ?? ""}`.toLowerCase();
+        let score = 0;
+        if (hay.includes(q.toLowerCase())) score += 5;
+        for (const t of tokens) if (hay.includes(t)) score += 1;
+        return { ...r, score };
+      })
+      .filter((r) => r.score > 0)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, limit);
+  }
 }
 
 /**

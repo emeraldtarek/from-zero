@@ -108,8 +108,15 @@ export function buildCorpusIndex(): { added: number; total: number; pages: numbe
   `);
 
   const deletePageNodes = db.prepare("DELETE FROM corpus_node WHERE page_slug = ?");
+  const deleteFtsAll = db.prepare("DELETE FROM corpus_fts");
+  const insertFts = db.prepare(
+    "INSERT INTO corpus_fts (slug, title, summary, content) VALUES (?, ?, ?, ?)",
+  );
 
   const tx = db.transaction(() => {
+    // The FTS table is rebuilt wholesale — cheaper than per-row maintenance
+    // for our scale and avoids drift if header-deletes leave orphan rows.
+    deleteFtsAll.run();
     let globalOrder = 0;
     for (const page of pages) {
       // Wipe and re-insert this page's nodes — keeps the table clean across
@@ -196,6 +203,7 @@ export function buildCorpusIndex(): { added: number; total: number; pages: numbe
           word_count: wordCount(sectionText),
           content_hash,
         });
+        insertFts.run(n.slug, n.title, summary ?? "", sectionText);
       }
     }
   });
