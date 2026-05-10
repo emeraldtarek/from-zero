@@ -20,21 +20,21 @@ of it correctly.
 ## Phase 1 — Chemistry fundamentals
 
 ### Matter & atoms
-- ✅ What "matter" is, and its relationship to mass and energy
-- ✅ What an atom is and how we know atoms exist
-- ✅ Scale of atoms (size, why we can't see them)
+- ⏳ What "matter" is, and its relationship to mass and energy
+- ⏳ What an atom is and how we know atoms exist
+- ⏳ Scale of atoms (size, why we can't see them)
 
 ### Atomic structure
-- ✅ The nucleus (protons + neutrons)
-- ✅ Electrons and electron shells / orbitals
-- ✅ Why atoms are mostly empty space
-- ✅ Forces inside the atom (strong nuclear, electromagnetic)
+- ⏳ The nucleus (protons + neutrons)
+- ⏳ Electrons and electron shells / orbitals
+- ⏳ Why atoms are mostly empty space
+- ⏳ Forces inside the atom (strong nuclear, electromagnetic)
 
 ### Electric charge
-- ✅ What "charge" is (positive / negative / neutral)
-- ✅ Coulomb's law in plain language
-- ✅ Why opposite charges attract and like charges repel
-- ✅ Charge as a conserved quantity
+- ⏳ What "charge" is (positive / negative / neutral)
+- ⏳ Coulomb's law in plain language
+- ⏳ Why opposite charges attract and like charges repel
+- ⏳ Charge as a conserved quantity
 
 ### Elements & the periodic table
 - ⏳ What an element is
@@ -86,18 +86,18 @@ of it correctly.
 ### General
 - ⏳ What water treatment is and why we do it
 - ⏳ Drinking water vs. wastewater vs. industrial
-- ⏳ What water treatment is and why we do it
 - ⏳ Coagulation / flocculation / sedimentation
+- ⏳ What water treatment is and why we do it
 - ⏳ Filtration (sand, carbon, multimedia)
-- ⏳ Drinking water vs. wastewater vs. industrial
 - ⏳ Disinfection (chlorine, UV, ozone)
 - ⏳ Ion exchange resins
-- ⏳ Coagulation / flocculation / sedimentation
+- ⏳ Drinking water vs. wastewater vs. industrial
 - ⏳ Membrane processes (MF / UF / NF / RO)
 - ⏳ Electrodialysis & capacitive deionization
-- ⏳ Filtration (sand, carbon, multimedia)
 - ⏳ Distillation
+- ⏳ Coagulation / flocculation / sedimentation
 - ⏳ Why water-treatment unit ops are the right vocabulary for ion separation
+- ⏳ Filtration (sand, carbon, multimedia)
 - ⏳ Disinfection (chlorine, UV, ozone)
 - ⏳ Ion exchange resins
 - ⏳ Membrane processes (MF / UF / NF / RO)
@@ -122,15 +122,15 @@ of it correctly.
 - ⏳ Ion-exchange chromatography
 - ⏳ Membrane separation
 - ⏳ Electrochemical separation
-- ⏳ Why separate Li-6 from Li-7 (fusion, fission, scientific)
 - ⏳ MOFs / crown ethers / ionic liquids
 - ⏳ Industrial / geopolitical context (who supplies Li-6, fusion implications)
+- ⏳ Why separate Li-6 from Li-7 (fusion, fission, scientific)
 - ⏳ The natural abundance ratio (~7.5% / 92.5%)
-- ⏳ Mass-difference physics & why ~17% is "a lot" but still hard
-- ⏳ Separation factor (α) — what it means and typical values
-- ⏳ COLEX (mercury amalgam) — chemistry, history, environmental issues
+- ✅ Mass-difference physics & why ~17% is "a lot" but still hard
+- ✅ Separation factor (α) — what it means and typical values
+- ✅ COLEX (mercury amalgam) — chemistry, history, environmental issues
 - ⏳ Electromagnetic separation (calutron)
-- ⏳ Laser methods (AVLIS, MLIS)
+- ✅ Laser methods (AVLIS, MLIS)
 - ⏳ Distillation
 - ⏳ Chemical exchange without mercury
 - ⏳ Ion-exchange chromatography
@@ -148,4 +148,4 @@ what didn't, and the new confidence symbols promoted.)
 
 | Date | Covered | Promoted | Notes |
 |------|---------|----------|-------|
-| 2026-05-10 | Completed modules 01 (Matter & Atoms), 02 (Atomic Structure), and 03 (Electric Charge). Deep dive into fundamentals of c | 01-chemistry-fundamentals/electric-charge-what-charge-is-positive-negative-neutral, 01-chemistry-fundamentals/electric-charge-coulomb-s-law-in-plain-language, 01-chemistry-fundamentals/electric-charge-why-opposite-charges-attract-and-like-charges-repel, 01-chemistry-fundamentals/electric-charge-charge-as-a-conserved-quantity |  |
+| 2026-05-10 | Jumped to phase 3 (physics of isotope separation) without completing chemistry-fundamentals 05–06. Used corpus tools to  | 03-lithium-isotope-separation/general-mass-difference-physics-why-17-is-a-lot-but-still-hard, 03-lithium-isotope-separation/general-separation-factor-α-what-it-means-and-typical-values, 03-lithium-isotope-separation/general-colex-mercury-amalgam-chemistry-history-environmental-issues, 03-lithium-isotope-separation/general-laser-methods-avlis-mlis |  |
