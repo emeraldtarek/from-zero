@@ -146,9 +146,15 @@ Next steps:
 3. Add these GitHub repository secrets at
    https://github.com/emeraldtarek/from-zero/settings/secrets/actions:
 
-     SSH_HOST  =  ${DOMAIN}
+     SSH_HOST  =  <DIRECT VPS IP, e.g. 178.105.102.91>
      SSH_USER  =  ${APP_USER}
      SSH_KEY   =  <contents of id_ed25519 (the private key)>
+
+   IMPORTANT: SSH_HOST must be the VPS IP, NOT the Cloudflare-proxied
+   domain. Cloudflare's orange-cloud proxy only routes HTTP/HTTPS — it
+   drops port 22, so SSH dials against the domain time out. If you
+   prefer a stable hostname, add a grey-cloud (DNS-only) A record like
+   ssh.${DOMAIN} pointed at the VPS and use that here.
 
 4. Fill in ${ENV_FILE} — at minimum set CLAUDE_CODE_OAUTH_TOKEN.
    Generate the token on your laptop with:  claude setup-token
