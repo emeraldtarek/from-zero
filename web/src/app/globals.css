@@ -42,9 +42,6 @@ html, body {
   max-width: 110ch;
   font-size: 1.0625rem;
   line-height: 1.7;
-  /* Long URLs and tokens shouldn't overflow into the chat rail. */
-  overflow-wrap: anywhere;
-  word-break: break-word;
 }
 .prose-reader p,
 .prose-reader ul,
@@ -52,8 +49,19 @@ html, body {
 .prose-reader blockquote {
   max-width: 80ch;
 }
+/* Scoped break rules. Container-wide `overflow-wrap: anywhere` makes
+   the browser treat every character as a column-sizing break point in
+   auto-layout tables — which yields absurdly narrow columns and tall
+   headers ("Ke / y", "Yea / r"). So we only break inside the elements
+   that actually have long unbreakable tokens: anchor URLs and inline
+   code identifiers. */
+.prose-reader a,
+.prose-reader code {
+  overflow-wrap: anywhere;
+}
 .prose-reader a {
-  /* word-break on links so they wrap cleanly inside the column. */
+  /* See above — overflow-wrap is scoped to anchors and code, never to
+     plain prose, so "Key"/"Year" don't get shredded in narrow cells. */
   word-break: break-word;
 }
 .prose-reader h1 {
