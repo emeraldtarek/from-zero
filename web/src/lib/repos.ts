@@ -266,8 +266,19 @@ export function getOrCreateChatSession(opts: {
   });
 }
 
-export function listChatSessions(): ChatSessionRow[] {
+export function listChatSessions(opts?: {
+  only_with_messages?: boolean;
+}): ChatSessionRow[] {
   const db = getDb();
+  if (opts?.only_with_messages) {
+    return db
+      .prepare(
+        `SELECT s.* FROM chat_sessions s
+           WHERE EXISTS (SELECT 1 FROM chat_messages m WHERE m.session_id = s.id)
+           ORDER BY s.updated_at DESC`,
+      )
+      .all() as ChatSessionRow[];
+  }
   return db
     .prepare("SELECT * FROM chat_sessions ORDER BY updated_at DESC")
     .all() as ChatSessionRow[];
@@ -284,6 +295,16 @@ export function getChatSession(id: number): ChatSessionRow | null {
 export function deleteChatSession(id: number) {
   const db = getDb();
   db.prepare("DELETE FROM chat_sessions WHERE id = ?").run(id);
+}
+
+export function renameChatSession(id: number, title: string): ChatSessionRow | null {
+  const db = getDb();
+  const trimmed = title.trim().slice(0, 200);
+  if (!trimmed) return null;
+  db.prepare(
+    "UPDATE chat_sessions SET title = ?, updated_at = datetime('now') WHERE id = ?",
+  ).run(trimmed, id);
+  return getChatSession(id);
 }
 
 export function listChatMessages(session_id: number): ChatMessageRow[] {

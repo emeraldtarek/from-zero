@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import MarkdownView from "./markdown-view";
 
 type Role = "user" | "assistant";
@@ -30,6 +31,11 @@ export default function ChatPanel({
   const [input, setInput] = useState("");
   const [streaming, setStreaming] = useState(false);
   const [sessionId, setSessionId] = useState<number | null>(initialSessionId ?? null);
+  const router = useRouter();
+  // True when this panel was opened without a session (i.e. /chat/new). On
+  // the first session event we'll swap the URL to /chat/<id> so the user can
+  // bookmark / share / reload cleanly.
+  const navigateOnSession = (initialSessionId ?? null) == null;
   const [err, setErr] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<AbortController | null>(null);
@@ -82,6 +88,9 @@ export default function ChatPanel({
           try {
             const ev = JSON.parse(line);
             if (ev.type === "session") {
+              if (sessionId == null && navigateOnSession && typeof ev.session_id === "number") {
+                router.replace(`/chat/${ev.session_id}`);
+              }
               setSessionId(ev.session_id);
             } else if (ev.type === "delta") {
               assistantText += ev.text;

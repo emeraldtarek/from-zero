@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { ensureSeeded, getPageBySlug } from "@/lib/content-loader";
 import { getChatSession, listChatMessages } from "@/lib/repos";
 import ChatPanel from "@/components/chat-panel";
+import EditableTitle from "@/components/editable-title";
 
 export const dynamic = "force-dynamic";
 
@@ -29,7 +30,7 @@ export default async function ChatSessionPage({
   return (
     <div className="h-screen flex flex-col px-6 py-4">
       <div className="mb-2 shrink-0">
-        <h1 className="text-xl font-semibold">{session.title}</h1>
+        <EditableTitle id={session.id} initial={session.title} />
         {page && (
           <div className="text-[var(--color-muted)] text-sm">
             context: {page.title} ({page.phase_id})

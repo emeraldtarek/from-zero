@@ -37,6 +37,7 @@ export default function Sidebar() {
         <SidebarLink href="/glossary" label="Glossary" />
         <SidebarLink href="/qa" label="Q&A log" />
         <SidebarLink href="/chat" label="Chat sessions" />
+        <SidebarLink href="/settings" label="⚙  Settings" />
 
         <div className="mt-4 mb-1 px-2 text-[0.7rem] uppercase tracking-widest text-[var(--color-muted)]">
           Curriculum
@@ -73,11 +74,6 @@ export default function Sidebar() {
         })}
       </nav>
 
-      <div className="mt-6 px-2 text-[0.7rem] text-[var(--color-muted)]">
-        <Link href="/settings" className="underline">
-          Settings & sync
-        </Link>
-      </div>
     </aside>
   );
 }
