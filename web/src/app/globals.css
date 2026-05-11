@@ -39,6 +39,13 @@ html, body {
   max-width: 72ch;
   font-size: 1.0625rem;
   line-height: 1.7;
+  /* Long URLs and tokens shouldn't overflow into the chat rail. */
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+.prose-reader a {
+  /* word-break on links so they wrap cleanly inside the column. */
+  word-break: break-word;
 }
 .prose-reader h1 {
   font-family: var(--font-serif);

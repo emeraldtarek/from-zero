@@ -16,7 +16,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        <div className="grid grid-cols-[260px_1fr] min-h-screen items-start">
+        <div className="grid grid-cols-[230px_1fr] min-h-screen items-start">
           <Sidebar />
           <main className="min-h-screen overflow-x-clip">{children}</main>
         </div>

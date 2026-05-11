@@ -5,6 +5,7 @@ import { listChatMessages, listConceptsByPhase, getOrCreateChatSession } from "@
 import MarkdownView from "@/components/markdown-view";
 import ChatPanel from "@/components/chat-panel";
 import ConceptToggle from "@/components/concept-toggle";
+import PageToc from "@/components/page-toc";
 
 export const dynamic = "force-dynamic";
 
@@ -38,7 +39,7 @@ export default async function ReadPage({ params }: { params: Promise<Params> }) 
   }));
 
   return (
-    <div className="grid grid-cols-[minmax(0,1fr)_400px] min-h-screen">
+    <div className="grid grid-cols-[minmax(0,1fr)_360px] min-h-screen">
       <div className="px-8 py-6 max-w-3xl">
         <div className="text-[0.72rem] uppercase tracking-widest text-[var(--color-muted)] mb-1">
           Phase {page.phase_number} · <span className="capitalize">{page.phase_id.replace(/^\d+-/, "").replace(/-/g, " ")}</span>
@@ -64,32 +65,33 @@ export default async function ReadPage({ params }: { params: Promise<Params> }) 
       </div>
 
       <aside className="border-l border-[var(--color-rule)] bg-[var(--color-paper-2)]/50 sticky top-0 h-screen flex flex-col">
-        <div className="px-3 pt-3 pb-2 border-b border-[var(--color-rule)]">
-          <div className="text-[0.72rem] uppercase tracking-widest text-[var(--color-muted)] mb-1">
-            Concepts on this phase
-          </div>
-          <details className="font-sans text-[0.85rem]">
-            <summary className="cursor-pointer hover:underline mb-1">
-              {phaseConcepts.length} concepts — click to expand
-            </summary>
-            <div className="space-y-1 max-h-44 overflow-y-auto pr-1">
-              {phaseConcepts.map((c) => (
-                <div
-                  key={c.slug}
-                  className="flex items-start gap-2 py-0.5 border-b border-[var(--color-rule)]/50 last:border-0"
-                >
-                  <div className="flex-1 leading-snug text-[0.82rem]">
-                    <div className="text-[var(--color-muted)] text-[0.7rem]">
-                      {c.section ?? "—"}
-                    </div>
-                    <div>{c.label}</div>
+        <PageToc />
+
+        <details className="px-3 pt-2 pb-2 border-b border-[var(--color-rule)] font-sans text-[0.85rem]">
+          <summary className="cursor-pointer text-[0.72rem] uppercase tracking-widest text-[var(--color-muted)] mb-1 list-none flex items-center justify-between">
+            <span>Concepts on this phase</span>
+            <span className="text-[var(--color-muted)] font-mono text-[0.7rem]">
+              {phaseConcepts.length}
+            </span>
+          </summary>
+          <div className="space-y-1 max-h-44 overflow-y-auto pr-1 mt-1">
+            {phaseConcepts.map((c) => (
+              <div
+                key={c.slug}
+                className="flex items-start gap-2 py-0.5 border-b border-[var(--color-rule)]/50 last:border-0"
+              >
+                <div className="flex-1 leading-snug text-[0.82rem]">
+                  <div className="text-[var(--color-muted)] text-[0.7rem]">
+                    {c.section ?? "—"}
                   </div>
-                  <ConceptToggle slug={c.slug} status={c.status} />
+                  <div>{c.label}</div>
                 </div>
-              ))}
-            </div>
-          </details>
-        </div>
+                <ConceptToggle slug={c.slug} status={c.status} />
+              </div>
+            ))}
+          </div>
+        </details>
+
         <div className="flex-1 min-h-0">
           <ChatPanel
             pageSlug={page.slug}
