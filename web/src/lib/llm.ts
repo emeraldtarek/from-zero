@@ -112,7 +112,7 @@ export async function* streamAnthropicAPI(
     const stream = client.messages.stream(
       {
         model: DEFAULT_MODEL,
-        max_tokens: 4096,
+        max_tokens: 16384,
         system,
         messages: messages as never,
         tools: tools.length ? (tools as never) : undefined,
@@ -206,6 +206,10 @@ type SDKContentBlock =
   | SDKToolResultBlock
   | { type: string };
 
+const MAX_AUTO_CONTINUE = 3;
+const AUTO_CONTINUE_PROMPT =
+  "Your previous response in this same turn was cut off. Below is what the user asked, the tool calls you already made (with their results), and any prose you streamed. Pick up exactly where you left off. Do NOT repeat tool calls you already made; do NOT re-explain things you already said.";
+
 export async function* streamClaudeCodeSDK(
   opts: StreamOptions,
 ): AsyncGenerator<StreamEvent, void, void> {
@@ -286,18 +290,24 @@ export async function* streamClaudeCodeSDK(
     ? `Previous conversation in this session:\n\n${transcript}\n\n---\n\nNew message:\n${opts.user_message}`
     : opts.user_message;
 
-  async function* messages() {
-    yield {
-      type: "user" as const,
-      message: { role: "user" as const, content: composedUserMessage },
-    };
-  }
-
   let full_text = "";
   const pendingToolInputs = new Map<string, { name: string; input: unknown }>();
   let sawAuthError = false;
 
-  try {
+  // Run the same query/streaming loop multiple times if the model gets cut
+  // off by the SDK's per-call turn budget (`error_max_turns`) or the model's
+  // output-token cap (`max_tokens`). Each continuation feeds back what was
+  // already done so the model can resume without repeating itself.
+  async function* runOne(
+    userMessage: string,
+  ): AsyncGenerator<StreamEvent, { stop_reason: string | null }, void> {
+    let lastStopReason: string | null = null;
+    async function* messages() {
+      yield {
+        type: "user" as const,
+        message: { role: "user" as const, content: userMessage },
+      };
+    }
     const q = query({
       prompt: messages(),
       options: {
@@ -305,16 +315,37 @@ export async function* streamClaudeCodeSDK(
         ...(mcpServer
           ? { mcpServers: { [SDK_SERVER_NAME]: mcpServer }, allowedTools }
           : { allowedTools: [] }),
-        maxTurns: opts.tools?.length ? 6 : 1,
+        // The SDK counts each assistant message (text block, tool_use, or
+        // tool_result roundtrip) as one "turn". A response that batches 20+
+        // tool_use blocks easily hits high turn counts. We bump generously and
+        // rely on the auto-continue (below) for anything beyond.
+        maxTurns: opts.tools?.length ? 60 : 4,
       },
     });
 
     for await (const raw of q) {
       const m = raw as {
         type: string;
-        message?: { content?: SDKContentBlock[] };
+        message?: { content?: SDKContentBlock[]; stop_reason?: string | null };
       };
+      if (m.type === "result") {
+        const r = raw as { subtype?: string };
+        // The SDK signals truncation via the result subtype: "error_max_turns"
+        // when our own maxTurns cap was hit, "error_max_tokens" when the model
+        // hit the per-call token budget. Either is a candidate for auto-
+        // continuation.
+        if (
+          r.subtype === "error_max_turns" ||
+          r.subtype === "error_max_tokens"
+        ) {
+          lastStopReason = r.subtype;
+        }
+      }
       if (m.type === "assistant" && m.message?.content) {
+        if (m.message.stop_reason && m.message.stop_reason !== "tool_use") {
+          // tool_use is the SDK's natural pause-for-tool-result, not a stop.
+          lastStopReason = m.message.stop_reason;
+        }
         let textBlockIdx = 0;
         for (const block of m.message.content) {
           if (block.type === "text") {
@@ -324,17 +355,13 @@ export async function* streamClaudeCodeSDK(
               continue;
             }
             if (!text) continue;
-            // Separate consecutive text blocks (which arrive as whole chunks
-            // from the SDK rather than streamed tokens) with a paragraph break
-            // so the rendered Markdown doesn't run sentences together.
             const sep = full_text && (textBlockIdx > 0 || !full_text.endsWith("\n")) ? "\n\n" : "";
             const out = sep + text;
             full_text += out;
-            yield { type: "delta", text: out };
+            yield { type: "delta", text: out } as const;
             textBlockIdx++;
           } else if (block.type === "tool_use") {
             const tu = block as SDKToolBlock;
-            // Strip the SDK's mcp__lithium__ prefix for nicer UI labels.
             const friendly = tu.name.replace(/^mcp__[^_]+__/, "");
             pendingToolInputs.set(tu.id, { name: friendly, input: tu.input });
           }
@@ -358,10 +385,56 @@ export async function* streamClaudeCodeSDK(
               }
             }
             tool_events.push({ type: "tool_call", name, input, result });
-            yield { type: "tool_call", name, input, result };
+            yield { type: "tool_call", name, input, result } as const;
           }
         }
       }
+    }
+    return { stop_reason: lastStopReason };
+  }
+
+  try {
+    const TRUNCATED = new Set([
+      "max_tokens",
+      "error_max_turns",
+      "error_max_tokens",
+    ]);
+    let result = yield* runOne(composedUserMessage);
+    let stop_reason = result.stop_reason;
+    let continues = 0;
+    while (stop_reason && TRUNCATED.has(stop_reason) && continues < MAX_AUTO_CONTINUE) {
+      continues++;
+      // Inject a synthetic notice so the UI shows we're auto-continuing.
+      yield {
+        type: "delta",
+        text: `\n\n_(continuing… ${continues}/${MAX_AUTO_CONTINUE})_\n\n`,
+      };
+      const toolCallsSoFar = tool_events.length
+        ? tool_events
+            .map(
+              (e, i) =>
+                `${i + 1}. ${e.name}(${JSON.stringify(e.input).slice(0, 240)})`,
+            )
+            .join("\n")
+        : "(none)";
+      const proseSoFar = full_text.trim() || "(none)";
+      const nextPrompt = [
+        AUTO_CONTINUE_PROMPT,
+        "",
+        "## The user's original request:",
+        opts.user_message,
+        "",
+        `## Tool calls you already made (${tool_events.length}):`,
+        toolCallsSoFar,
+        "",
+        "## Prose you already streamed:",
+        proseSoFar,
+        "",
+        "## Continue:",
+        "Pick up the next tool call or sentence. Do not repeat what's listed above.",
+      ].join("\n");
+      result = yield* runOne(nextPrompt);
+      stop_reason = result.stop_reason;
     }
 
     if (sawAuthError && !full_text) {

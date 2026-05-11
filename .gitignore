@@ -23,6 +23,16 @@ web/data/*.db-shm
 zero/_pdf-output/
 zero/_pdf-tooling/node_modules/
 
+# Per-environment user-data tracking files. The seed templates live next
+# to them as *.example.md and are committed; the live files are gitignored
+# and auto-copied from the templates on first run by
+# web/src/lib/content-loader.ts → bootstrapUserData(). Treat them like
+# .env vs .env.local.
+zero/04-learning/glossary.md
+zero/04-learning/knowledge-tracker.md
+zero/04-learning/questions-and-answers.md
+zero/05-meta/progress-log.md
+
 # python
 __pycache__/
 *.pyc

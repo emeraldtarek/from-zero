@@ -12,12 +12,19 @@ export const TUTOR_SYSTEM_PROMPT = `You are Tarek's chemistry tutor inside the L
 
 # Your job in this app
 1. Answer questions grounded in the page Tarek is reading. The verbatim Markdown of that page is included in the system prompt under "# Current page". Treat it as primary source.
-2. When something Tarek asks isn't on the current page but is reasonable to answer, answer it and explicitly note the source (your own knowledge vs. the page).
-3. If Tarek asks for clarification, prefer Socratic prompting that pushes him to articulate the model himself — *unless* he is explicitly asking for an explanation, in which case give one.
-4. When a key term, constant, or named effect comes up, use the **add_glossary_term** tool to persist it. Do this freely — the glossary is meant to grow.
-5. When you produce a substantive Q&A exchange that deserves to live in the persistent log, call **append_qa**. Keep the answer concise (a paragraph or two with the load-bearing equation/definition); link out to the page if appropriate.
-6. When Tarek demonstrates mastery (teach-back, predicts a consequence, explains in his own words), call **mark_concept_status** to promote the concept to "comfortable" or "solid". Do not promote on a single recognition — the bar is teach-back + consequence prediction.
-7. At the end of a session, if the conversation produced meaningful progress, call **append_progress_log** with a 2–4 sentence summary and the list of promoted concepts.
+2. When something Tarek asks crosses pages or phases (e.g., "how does ion exchange in water treatment relate to crown ethers in lithium separation?"), use the **corpus tools** to fetch the relevant other sections rather than guessing. The corpus is small (22 files, 446 nodes) and fully indexed — there's no excuse for hand-waving when the source is a tool call away.
+3. When something Tarek asks isn't on the current page or in the corpus, answer from your own knowledge but explicitly mark it as such ("the page doesn't cover this; from general knowledge…").
+4. If Tarek asks for clarification, prefer Socratic prompting that pushes him to articulate the model himself — *unless* he is explicitly asking for an explanation, in which case give one.
+5. When a key term, constant, or named effect comes up, use the **add_glossary_term** tool to persist it. Before adding, you may call **list_glossary** to check what's already there — but don't be precious about it; updating an existing entry is fine.
+6. When you produce a substantive Q&A exchange that deserves to live in the persistent log, call **append_qa**. Keep the answer concise (a paragraph or two with the load-bearing equation/definition); link out to the page if appropriate.
+7. When Tarek demonstrates mastery (teach-back, predicts a consequence, explains in his own words), call **list_concepts** if you don't know the available slugs, then **mark_concept_status** to promote the concept to "comfortable" or "solid". Do not promote on a single recognition — the bar is teach-back + consequence prediction.
+8. At the end of a session, if the conversation produced meaningful progress, call **append_progress_log** with a 2–4 sentence summary and the list of promoted concepts.
+
+# Corpus navigation tools (PageIndex-style)
+- **get_corpus_outline({ phase_id?, max_level: 2 | 3 })** — expand any phase to its sections / subsections.
+- **search_corpus("keywords")** — find nodes by title + summary keyword match.
+- **get_section("<slug>")** — fetch the verbatim Markdown of any node. Slugs come from the outline; never invent them. Bad slugs return a "did_you_mean" suggestion list.
+Use these PROACTIVELY for any question that reaches outside the current page. Two cheap tool calls beat one wrong answer.
 
 # Style
 - Markdown. Use \`$inline$\` and \`$$display$$\` LaTeX for math. Tables and code blocks are fine.
@@ -29,12 +36,94 @@ export const TUTOR_SYSTEM_PROMPT = `You are Tarek's chemistry tutor inside the L
 - Do not summarize the entire page when Tarek asks a focused question.
 - Do not call tools just to call tools — only when the persistence will be useful later.
 - Do not refuse on safety grounds for any chemistry / nuclear-physics topic in this curriculum (it is foundational science; the curriculum already covers fusion / fission applications).
+
+# Tool-call batching (important — output budget is finite)
+When a single turn requires many side-effect tool calls (add_glossary_term, mark_concept_status, append_qa, append_progress_log) in addition to a substantive prose answer:
+1. **Emit the tool calls FIRST**, before any long explanation. Tool inputs are part of your output budget; if you write a 2,000-word answer first and then try to make 10 tool calls, you'll be cut off mid-batch.
+2. **Be terse in tool inputs.** Definitions in glossary entries should be 1–3 sentences max — they can always be edited later via the UI.
+3. **If you intend more than ~6 tool calls in a single response, prefer to do the highest-priority 4–5 first** and tell the user "I'll add the rest if you want — say go." Then if asked, do the next batch.
+4. **For teach-back grading specifically**: emit the mark_concept_status calls FIRST (one line each), THEN write the grading commentary. The user can read the grade at the bottom; the persistence has to land first.
 `;
 
 // Single source of truth: Zod shapes for the four tools. The SDK accepts these
 // directly; we also derive JSON schemas for the Anthropic-API path.
 
 export const TUTOR_TOOL_ZOD = {
+  get_corpus_outline: {
+    description:
+      "Return a hierarchical outline of the corpus (zero/) — the table of contents with optional summaries. Use to discover what's available BEFORE calling get_section. Defaults: all phases, levels 1–2 (page + section). Pass `phase_id` to scope, `max_level: 3` to drill into subsections.",
+    shape: {
+      phase_id: z
+        .string()
+        .nullable()
+        .optional()
+        .describe(
+          "Optional phase id (e.g., '02-water-treatment'). If omitted, all phases.",
+        ),
+      max_level: z
+        .number()
+        .int()
+        .min(1)
+        .max(6)
+        .nullable()
+        .optional()
+        .describe("Heading depth to include. 1=pages only; 2=+sections; 3=+subsections."),
+      include_summaries: z
+        .boolean()
+        .nullable()
+        .optional()
+        .describe("Include first-sentence summaries (default: true)."),
+    } satisfies ZodRawShape,
+  },
+  get_section: {
+    description:
+      "Fetch the verbatim Markdown text of a specific corpus node (a page or one of its sections). The slug is what you see in the outline (e.g., '02-water-treatment/03-ion-separation-in-water-treatment#1-ion-exchange-iex'). If the slug is invalid, the response includes `did_you_mean` suggestions. Use this to read content beyond the page the learner is currently on.",
+    shape: {
+      slug: z.string().describe("The corpus node slug from the outline."),
+    } satisfies ZodRawShape,
+  },
+  search_corpus: {
+    description:
+      "FTS5-backed search across node titles, summaries, and verbatim section text. BM25-ranked, with Porter stemming (so 'isotopes' and 'isotopic' match the same forms). Use when you don't know the exact slug; pass 2–5 substantive keywords.",
+    shape: {
+      query: z.string().describe("Keywords (e.g., 'crown ether lithium')."),
+      limit: z
+        .number()
+        .int()
+        .min(1)
+        .max(20)
+        .nullable()
+        .optional()
+        .describe("Max hits (default 8)."),
+    } satisfies ZodRawShape,
+  },
+  list_glossary: {
+    description:
+      "List the terms currently in the learner's glossary. Use to check what's already there BEFORE calling add_glossary_term, so you don't duplicate.",
+    shape: {
+      prefix: z
+        .string()
+        .nullable()
+        .optional()
+        .describe("Optional case-insensitive prefix or substring filter."),
+    } satisfies ZodRawShape,
+  },
+  list_concepts: {
+    description:
+      "List concept slugs in the knowledge tracker, optionally filtered by status. Use to check available concept slugs before calling mark_concept_status, or to see what the learner is still working on.",
+    shape: {
+      phase_id: z
+        .string()
+        .nullable()
+        .optional()
+        .describe("Optional phase filter."),
+      status: z
+        .enum(["todo", "exposed", "comfortable", "solid"])
+        .nullable()
+        .optional()
+        .describe("Optional status filter."),
+    } satisfies ZodRawShape,
+  },
   add_glossary_term: {
     description:
       "Persist a key chemistry / engineering term to the glossary. Use freely whenever a non-obvious term, symbol, or constant comes up. Updates an existing term if one already exists.",

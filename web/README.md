@@ -45,6 +45,28 @@ without any chat credentials.
 The DB lives at `web/data/lithium.db`. Re-sync from disk anytime via the
 **Settings → Re-sync from zero/** button or `npm run ingest`.
 
+## User-data files (the `.env.example` pattern)
+
+The four Markdown mirrors above are **per-environment runtime state**, not
+source code. They get rewritten by the app every time you chat. Treat them
+like `.env` files:
+
+- `zero/04-learning/glossary.example.md`, `knowledge-tracker.example.md`,
+  `questions-and-answers.example.md`, `zero/05-meta/progress-log.example.md`
+  → **committed** seed templates.
+- The live files (same paths without `.example`) → **gitignored**, copied
+  from the templates on first run by `bootstrapUserData()` in
+  `src/lib/content-loader.ts`. You don't have to do anything manually.
+
+**To reset to a clean slate** (locally or on a fresh deploy): delete the
+live files, delete `web/data/lithium.db`, then hit any route. The next
+request re-bootstraps everything from the templates + the corpus.
+
+**On the VPS**: `git clone` gives you only the `.example.md` files. The
+first chat request copies them into place, seeds the DB from the corpus,
+and the app is live. No setup step needed beyond `npm install` and
+setting auth in `web/.env.local`.
+
 ## Folder layout
 
 ```

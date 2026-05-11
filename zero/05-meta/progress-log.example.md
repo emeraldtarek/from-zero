@@ -136,13 +136,3 @@ typos. The post-mortem reads this end-to-end.
 - After the lithium track has progressed substantively, do a
   post-mortem and synthesize the patterns into a reusable Claude Code
   skill for "from-zero domain learning" (Track 2).
-
-## 2026-05-10 — Completed modules 01 (Matter & Atoms), 02 (Atomic Structure), and 03 (Electric C
-
-**What we did:**
-Completed modules 01 (Matter & Atoms), 02 (Atomic Structure), and 03 (Electric Charge). Deep dive into fundamentals of charge, Coulomb's law, EM vs. gravity at atomic scale, fine-structure constant context. Multiple teach-backs with correct consequence predictions (e.g., effect of doubled elementary charge on atomic radius and binding energy).
-
-
-**Promoted:** 01-chemistry-fundamentals/electric-charge-what-charge-is-positive-negative-neutral, 01-chemistry-fundamentals/electric-charge-coulomb-s-law-in-plain-language, 01-chemistry-fundamentals/electric-charge-why-opposite-charges-attract-and-like-charges-repel, 01-chemistry-fundamentals/electric-charge-charge-as-a-conserved-quantity
-
----
