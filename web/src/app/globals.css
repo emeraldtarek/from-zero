@@ -36,12 +36,21 @@ html, body {
 
 /* Markdown reading typography */
 .prose-reader {
-  max-width: 88ch;
+  /* Text paragraphs read best at ~75ch; tables / pre / images deserve
+     more. Set the container wide so wide elements can fill, then cap
+     body-text-bearing children below. */
+  max-width: 110ch;
   font-size: 1.0625rem;
   line-height: 1.7;
   /* Long URLs and tokens shouldn't overflow into the chat rail. */
   overflow-wrap: anywhere;
   word-break: break-word;
+}
+.prose-reader p,
+.prose-reader ul,
+.prose-reader ol,
+.prose-reader blockquote {
+  max-width: 80ch;
 }
 .prose-reader a {
   /* word-break on links so they wrap cleanly inside the column. */
