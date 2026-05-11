@@ -4,8 +4,8 @@ import { ensureSeeded, getPageBySlug, listPages } from "@/lib/content-loader";
 import { listChatMessages, getOrCreateChatSession } from "@/lib/repos";
 import { getConceptsForPage } from "@/lib/page-concept-map";
 import {
+  getCompletedAnchors,
   isPageCompleted,
-  listCompletedSections,
 } from "@/lib/section-completion";
 import MarkdownView from "@/components/markdown-view";
 import ChatPanel from "@/components/chat-panel";
@@ -35,13 +35,10 @@ export default async function ReadPage({ params }: { params: Promise<Params> }) 
   const pageConcepts = getConceptsForPage(page.slug);
 
   // Section completion state — drive the inline ✓ pills + the page-level
-  // "Mark page complete" button.
-  const completions = listCompletedSections(page.slug);
-  const completedAnchors = new Set<string>(
-    completions
-      .map((c) => c.section_anchor)
-      .filter((a): a is string => typeof a === "string"),
-  );
+  // "Mark page complete" button. When the whole page is marked complete,
+  // every section anchor on the page is implicitly considered complete
+  // too, so all inline pills flip in lockstep.
+  const completedAnchors = getCompletedAnchors(page.slug);
   const pageDone = isPageCompleted(page.slug);
 
   // Get or create the chat session for this page so the user can resume.

@@ -299,3 +299,34 @@ export function isPageCompleted(page_slug: string): boolean {
       .get(page_slug))
   );
 }
+
+/**
+ * Anchor ids the reader should render as ✓ Completed.
+ *
+ * Includes explicit per-section completions PLUS, if the whole page has
+ * been marked complete, every H2/H3 anchor on that page — so the inline
+ * pills next to each heading flip in lockstep with the page-level button.
+ * The page-completion → section-completion implication lives here in
+ * the read layer (no DB duplication needed).
+ */
+export function getCompletedAnchors(page_slug: string): Set<string> {
+  const db = getDb();
+  const explicit = db
+    .prepare(
+      "SELECT section_anchor FROM section_completion WHERE page_slug = ? AND section_anchor IS NOT NULL",
+    )
+    .all(page_slug) as Array<{ section_anchor: string }>;
+  const anchors = new Set<string>(explicit.map((r) => r.section_anchor));
+  if (isPageCompleted(page_slug)) {
+    const nodes = db
+      .prepare(
+        "SELECT slug FROM corpus_node WHERE page_slug = ? AND level >= 2",
+      )
+      .all(page_slug) as Array<{ slug: string }>;
+    for (const n of nodes) {
+      const i = n.slug.indexOf("#");
+      if (i > 0) anchors.add(n.slug.slice(i + 1));
+    }
+  }
+  return anchors;
+}
