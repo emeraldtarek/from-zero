@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import MarkdownView from "./markdown-view";
+import { withAuthHeader } from "@/lib/client-auth";
 
 type Role = "user" | "assistant";
 type Msg = {
@@ -62,17 +63,20 @@ export default function ChatPanel({
     abortRef.current = ac;
 
     try {
-      const res = await fetch("/api/chat", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        signal: ac.signal,
-        body: JSON.stringify({
-          message: text,
-          page_slug: pageSlug ?? null,
-          concept_slug: conceptSlug ?? null,
-          session_id: sessionId,
+      const res = await fetch(
+        "/api/chat",
+        withAuthHeader({
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          signal: ac.signal,
+          body: JSON.stringify({
+            message: text,
+            page_slug: pageSlug ?? null,
+            concept_slug: conceptSlug ?? null,
+            session_id: sessionId,
+          }),
         }),
-      });
+      );
       if (!res.ok || !res.body) throw new Error(`chat failed: ${res.status}`);
       const reader = res.body.getReader();
       const decoder = new TextDecoder();

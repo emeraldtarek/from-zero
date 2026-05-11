@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { z } from "zod";
 import { ensureSeeded } from "@/lib/content-loader";
 import { markComplete } from "@/lib/section-completion";
+import { parseClientAuthHeader } from "@/lib/llm";
 
 export const runtime = "nodejs";
 
@@ -18,9 +19,11 @@ export async function POST(req: NextRequest) {
   } catch (err) {
     return Response.json({ error: String(err) }, { status: 400 });
   }
+  const clientAuth = parseClientAuthHeader(req.headers.get("x-claude-auth"));
   const result = await markComplete(
     data.page_slug,
     data.section_anchor ?? null,
+    clientAuth,
   );
   if (!result.ok) {
     return Response.json(result, { status: 404 });

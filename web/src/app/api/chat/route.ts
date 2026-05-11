@@ -20,7 +20,11 @@ import {
   renderOutlineMarkdown,
   searchCorpus,
 } from "@/lib/corpus-index";
-import { streamChat, type AnthropicTool } from "@/lib/llm";
+import {
+  parseClientAuthHeader,
+  streamChat,
+  type AnthropicTool,
+} from "@/lib/llm";
 import {
   TUTOR_SYSTEM_PROMPT,
   TUTOR_TOOL_SCHEMAS,
@@ -274,6 +278,7 @@ export async function POST(req: NextRequest) {
       send({ type: "session", session_id: session.id });
 
       try {
+        const clientAuth = parseClientAuthHeader(req.headers.get("x-claude-auth"));
         for await (const ev of streamChat({
           system: systemWithConcepts,
           history: history_for_llm,
@@ -282,6 +287,7 @@ export async function POST(req: NextRequest) {
             ? { title: page.title, slug: page.slug, content: page.content }
             : null,
           tools,
+          client_auth: clientAuth,
         })) {
           if (ev.type === "delta") {
             assistantText += ev.text;

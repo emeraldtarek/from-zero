@@ -5,32 +5,80 @@ type MessageParam = {
   content: string | Array<unknown>;
 };
 
+export type ClientAuth = {
+  /** sk-ant-api03-… → "api-key"; sk-ant-oat01-… → "oauth". */
+  kind: "api-key" | "oauth";
+  token: string;
+};
+
+export function parseClientAuthHeader(value: string | null | undefined): ClientAuth | null {
+  if (!value) return null;
+  const t = value.trim();
+  if (!t) return null;
+  return {
+    token: t,
+    kind: t.startsWith("sk-ant-oat") ? "oauth" : "api-key",
+  };
+}
+
 export const DEFAULT_MODEL =
   process.env.LITHIUM_MODEL ?? "claude-sonnet-4-5-20250929";
 
-export type Provider = "anthropic-api" | "claude-code-sdk";
+export type Provider = "anthropic-api" | "claude-code-sdk" | "client-byo";
 
-export function detectProvider(): Provider {
-  if (process.env.ANTHROPIC_API_KEY && process.env.ANTHROPIC_API_KEY.length > 0) {
-    return "anthropic-api";
+/**
+ * Pick the auth source for this request. Precedence:
+ *   1. Browser-provided token (`x-claude-auth` header).
+ *   2. Server env (only when LITHIUM_REQUIRE_CLIENT_AUTH != "1").
+ *   3. None → caller must surface the "set token in Settings" UX.
+ */
+export function resolveAuth(client?: ClientAuth | null):
+  | { source: "client"; auth: ClientAuth }
+  | { source: "server-api-key"; token: string }
+  | { source: "server-oauth"; token: string }
+  | { source: "none" } {
+  if (client) return { source: "client", auth: client };
+  const requireClient = process.env.LITHIUM_REQUIRE_CLIENT_AUTH === "1";
+  if (requireClient) return { source: "none" };
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (apiKey) return { source: "server-api-key", token: apiKey };
+  const oauth = process.env.CLAUDE_CODE_OAUTH_TOKEN;
+  if (oauth) return { source: "server-oauth", token: oauth };
+  return { source: "none" };
+}
+
+export function detectProvider(client?: ClientAuth | null): Provider {
+  const r = resolveAuth(client);
+  if (r.source === "client") return "client-byo";
+  if (r.source === "server-api-key") return "anthropic-api";
+  if (r.source === "server-oauth") return "claude-code-sdk";
+  return "client-byo";
+}
+
+function makeAnthropicClient(
+  source: "client" | "server-api-key" | "server-oauth",
+  kindOrTokenInfo:
+    | { kind: "api-key" | "oauth"; token: string }
+    | { token: string },
+): Anthropic {
+  if (source === "client") {
+    const info = kindOrTokenInfo as { kind: "api-key" | "oauth"; token: string };
+    if (info.kind === "oauth") {
+      return new Anthropic({
+        authToken: info.token,
+        defaultHeaders: { "anthropic-beta": "oauth-2025-04-20" },
+      });
+    }
+    return new Anthropic({ apiKey: info.token });
   }
-  return "claude-code-sdk";
-}
-
-export function authConfigured(): boolean {
-  return !!(
-    process.env.ANTHROPIC_API_KEY ||
-    process.env.CLAUDE_CODE_OAUTH_TOKEN
-  );
-}
-
-let _client: Anthropic | null = null;
-function getAnthropic(): Anthropic {
-  if (_client) return _client;
-  _client = new Anthropic({
-    apiKey: process.env.ANTHROPIC_API_KEY,
+  if (source === "server-api-key") {
+    return new Anthropic({ apiKey: (kindOrTokenInfo as { token: string }).token });
+  }
+  // server-oauth
+  return new Anthropic({
+    authToken: (kindOrTokenInfo as { token: string }).token,
+    defaultHeaders: { "anthropic-beta": "oauth-2025-04-20" },
   });
-  return _client;
 }
 
 export type ChatTurn = {
@@ -58,6 +106,7 @@ export type StreamOptions = {
   page_context?: { title: string; slug: string; content: string } | null;
   signal?: AbortSignal;
   tools?: AnthropicTool[];
+  client_auth?: ClientAuth | null;
 };
 
 export type AnthropicTool = {
@@ -88,7 +137,21 @@ function buildSystemPrompt(opts: StreamOptions): string {
 export async function* streamAnthropicAPI(
   opts: StreamOptions,
 ): AsyncGenerator<StreamEvent, void, void> {
-  const client = getAnthropic();
+  const r = resolveAuth(opts.client_auth);
+  if (r.source === "none") {
+    yield {
+      type: "error",
+      message:
+        "No Claude credentials. Open Settings and paste an Anthropic API key (sk-ant-api03-…) or a Claude Code OAuth token (sk-ant-oat01-…) — it's stored in your browser only.",
+    };
+    return;
+  }
+  const client =
+    r.source === "client"
+      ? makeAnthropicClient("client", r.auth)
+      : r.source === "server-api-key"
+        ? makeAnthropicClient("server-api-key", { token: r.token })
+        : makeAnthropicClient("server-oauth", { token: r.token });
   const system = buildSystemPrompt(opts);
   const messages: MessageParam[] = opts.history.map((t) => ({
     role: t.role,
@@ -462,13 +525,30 @@ export async function* streamClaudeCodeSDK(
 
 // -------------------- Public dispatcher --------------------
 
+/**
+ * Route a chat turn. Prefers the direct Anthropic SDK path whenever any
+ * token (browser or server) is available — it works with both API keys
+ * and OAuth tokens and supports tool use cleanly. Falls back to the
+ * Claude Agent SDK only when no client auth was provided AND the only
+ * server credential is a CLAUDE_CODE_OAUTH_TOKEN (whose subprocess
+ * needs the env var set globally).
+ */
 export async function* streamChat(
   opts: StreamOptions,
 ): AsyncGenerator<StreamEvent, void, void> {
-  const provider = detectProvider();
-  if (provider === "anthropic-api") {
+  const r = resolveAuth(opts.client_auth);
+  if (r.source === "client" || r.source === "server-api-key") {
     yield* streamAnthropicAPI(opts);
-  } else {
-    yield* streamClaudeCodeSDK(opts);
+    return;
   }
+  if (r.source === "server-oauth") {
+    yield* streamClaudeCodeSDK(opts);
+    return;
+  }
+  // No auth available anywhere — surface the BYO-token UX.
+  yield {
+    type: "error",
+    message:
+      "No Claude credentials. Open Settings and paste an Anthropic API key (sk-ant-api03-…) or a Claude Code OAuth token (sk-ant-oat01-…) — it's stored in your browser only.",
+  };
 }

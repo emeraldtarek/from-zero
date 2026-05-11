@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { withAuthHeader } from "@/lib/client-auth";
 
 type State =
   | { kind: "idle" }
@@ -33,14 +34,17 @@ export default function SectionMark({
   async function run() {
     setState({ kind: "marking" });
     try {
-      const r = await fetch("/api/section/complete", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          page_slug: pageSlug,
-          section_anchor: sectionAnchor,
+      const r = await fetch(
+        "/api/section/complete",
+        withAuthHeader({
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            page_slug: pageSlug,
+            section_anchor: sectionAnchor,
+          }),
         }),
-      });
+      );
       const j = await r.json();
       if (!r.ok || !j.ok) throw new Error(j.error ?? `HTTP ${r.status}`);
       setState({

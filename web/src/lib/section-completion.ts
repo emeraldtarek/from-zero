@@ -29,20 +29,28 @@ import {
 } from "./repos";
 import { getConceptsForPage } from "./page-concept-map";
 import { getPageBySlug } from "./content-loader";
+import { resolveAuth, type ClientAuth } from "./llm";
 
 const HAIKU_MODEL = "claude-haiku-4-5-20251001";
 
-function buildAnthropic(): Anthropic | null {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  const oauth = process.env.CLAUDE_CODE_OAUTH_TOKEN;
-  if (!apiKey && !oauth) return null;
+function buildAnthropic(clientAuth?: ClientAuth | null): Anthropic | null {
+  const r = resolveAuth(clientAuth);
+  if (r.source === "none") return null;
+  if (r.source === "client") {
+    if (r.auth.kind === "oauth") {
+      return new Anthropic({
+        authToken: r.auth.token,
+        defaultHeaders: { "anthropic-beta": "oauth-2025-04-20" },
+      });
+    }
+    return new Anthropic({ apiKey: r.auth.token });
+  }
+  if (r.source === "server-api-key") {
+    return new Anthropic({ apiKey: r.token });
+  }
   return new Anthropic({
-    apiKey,
-    authToken: !apiKey && oauth ? oauth : undefined,
-    defaultHeaders:
-      !apiKey && oauth
-        ? { "anthropic-beta": "oauth-2025-04-20" }
-        : undefined,
+    authToken: r.token,
+    defaultHeaders: { "anthropic-beta": "oauth-2025-04-20" },
   });
 }
 
@@ -108,8 +116,9 @@ type ExtractedTerm = {
 async function extractTerms(
   title: string,
   content: string,
+  clientAuth?: ClientAuth | null,
 ): Promise<ExtractedTerm[]> {
-  const client = buildAnthropic();
+  const client = buildAnthropic(clientAuth);
   if (!client) return [];
   // Cap content to keep token cost predictable.
   const trimmed = content.length > 8000 ? content.slice(0, 8000) + "…" : content;
@@ -174,6 +183,7 @@ export type CompleteError = { ok: false; error: string };
 export async function markComplete(
   page_slug: string,
   section_anchor: string | null,
+  clientAuth: ClientAuth | null = null,
 ): Promise<CompleteResult | CompleteError> {
   const db = getDb();
   const existing = db
@@ -199,8 +209,9 @@ export async function markComplete(
     return { ok: false, error: "section not found" };
   }
 
-  // 1) Extract + persist glossary terms
-  const terms = await extractTerms(sec.title, sec.content);
+  // 1) Extract + persist glossary terms (soft-fails if no auth available;
+  //    the completion still records and concepts still promote).
+  const terms = await extractTerms(sec.title, sec.content, clientAuth);
   let glossary_added = 0;
   for (const t of terms) {
     if (!t.term || !t.definition) continue;

@@ -1,15 +1,15 @@
 import { ensureSeeded } from "@/lib/content-loader";
-import { authConfigured, detectProvider, DEFAULT_MODEL } from "@/lib/llm";
+import { DEFAULT_MODEL } from "@/lib/llm";
 import SyncButton from "./sync-button";
 import ResetButton from "./reset-button";
+import CredentialsForm from "./credentials-form";
 
 export const dynamic = "force-dynamic";
 
 export default async function SettingsPage() {
   ensureSeeded();
-  const provider = detectProvider();
   const model = DEFAULT_MODEL;
-  const auth = authConfigured();
+  const requireClientAuth = process.env.LITHIUM_REQUIRE_CLIENT_AUTH === "1";
   const oauthSet = !!process.env.CLAUDE_CODE_OAUTH_TOKEN;
   const apiKeySet = !!process.env.ANTHROPIC_API_KEY;
   return (
@@ -20,32 +20,35 @@ export default async function SettingsPage() {
       </p>
 
       <section className="border border-[var(--color-rule)] rounded-md p-4 bg-white/70 mb-4 font-sans">
-        <h2 className="font-semibold mb-2">Chat provider</h2>
+        <h2 className="font-semibold mb-2">Chat credentials (this browser)</h2>
+        <CredentialsForm />
+      </section>
+
+      <section className="border border-[var(--color-rule)] rounded-md p-4 bg-white/70 mb-4 font-sans">
+        <h2 className="font-semibold mb-2">Server diagnostics</h2>
         <div className="text-sm">
-          <div>
-            <span className="text-[var(--color-muted)]">Mode: </span>
-            <code>{provider}</code>
-          </div>
           <div>
             <span className="text-[var(--color-muted)]">Model: </span>
             <code>{model}</code>
           </div>
           <div>
-            <span className="text-[var(--color-muted)]">ANTHROPIC_API_KEY: </span>
+            <span className="text-[var(--color-muted)]">Server ANTHROPIC_API_KEY: </span>
             <code>{apiKeySet ? "set" : "—"}</code>
           </div>
           <div>
-            <span className="text-[var(--color-muted)]">CLAUDE_CODE_OAUTH_TOKEN: </span>
+            <span className="text-[var(--color-muted)]">Server CLAUDE_CODE_OAUTH_TOKEN: </span>
             <code>{oauthSet ? "set" : "—"}</code>
           </div>
           <div>
-            <span className="text-[var(--color-muted)]">Status: </span>
-            <code>{auth ? "ready" : "not configured"}</code>
+            <span className="text-[var(--color-muted)]">LITHIUM_REQUIRE_CLIENT_AUTH: </span>
+            <code>{requireClientAuth ? "on" : "off"}</code>
           </div>
           <p className="mt-2 text-[var(--color-muted)] text-[0.9rem]">
-            {provider === "anthropic-api"
-              ? "Using direct Anthropic API. Tool use (auto-glossary, auto-Q&A, auto-promotion, auto-progress-log) is enabled."
-              : "Using @anthropic-ai/claude-agent-sdk against your Claude Code Max subscription via in-process MCP. Auto-glossary / Q&A / promotion / progress-log tools are wired and will fire as the model decides to call them."}
+            {requireClientAuth
+              ? "Server env credentials are ignored. Every chat / mark-complete request must include x-claude-auth from the browser."
+              : apiKeySet || oauthSet
+                ? "Server has credentials available as a fallback when the browser doesn't send x-claude-auth (local dev convenience)."
+                : "No server credentials configured. Browser must provide a token."}
           </p>
         </div>
       </section>
