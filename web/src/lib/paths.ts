@@ -25,6 +25,11 @@ export const PHASE_DIRS = [
   { id: "01-chemistry-fundamentals", title: "Chemistry Fundamentals", number: 1 },
   { id: "02-water-treatment", title: "Water Treatment", number: 2 },
   { id: "03-lithium-isotope-separation", title: "Lithium Isotope Separation", number: 3 },
+  {
+    id: "05-meta/research-notes",
+    title: "Research Notes (deep dives)",
+    number: 4,
+  },
 ] as const;
 
 export type PhaseId = (typeof PHASE_DIRS)[number]["id"];
