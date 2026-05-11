@@ -1,6 +1,7 @@
 import { ensureSeeded } from "@/lib/content-loader";
 import { authConfigured, detectProvider, DEFAULT_MODEL } from "@/lib/llm";
 import SyncButton from "./sync-button";
+import ResetButton from "./reset-button";
 
 export const dynamic = "force-dynamic";
 
@@ -58,7 +59,7 @@ export default async function SettingsPage() {
         <SyncButton />
       </section>
 
-      <section className="border border-[var(--color-rule)] rounded-md p-4 bg-white/70 font-sans">
+      <section className="border border-[var(--color-rule)] rounded-md p-4 bg-white/70 mb-4 font-sans">
         <h2 className="font-semibold mb-2">Persisted artifacts</h2>
         <ul className="text-sm space-y-1 list-disc list-inside text-[var(--color-muted)]">
           <li>
@@ -78,6 +79,20 @@ export default async function SettingsPage() {
             session entry.
           </li>
         </ul>
+      </section>
+
+      <section className="border border-[var(--color-danger)]/30 rounded-md p-4 bg-red-50/40 font-sans">
+        <h2 className="font-semibold mb-2 text-[var(--color-danger)]">
+          Danger zone
+        </h2>
+        <p className="text-sm text-[var(--color-muted)] mb-3">
+          Wipe all learner-tracking state (glossary, Q&A, progress logs,
+          chat history, concept promotions) and reset the live Markdown
+          mirrors back to their seed templates. The curriculum, the
+          navigation index, and the Haiku-written summaries are
+          preserved. <strong>This cannot be undone.</strong>
+        </p>
+        <ResetButton />
       </section>
     </div>
   );
