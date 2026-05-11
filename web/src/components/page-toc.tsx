@@ -1,27 +1,33 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 
 type Heading = { id: string; text: string; level: number };
 
 /**
  * Mintlify-style "On this page" panel. Scans the .prose-reader subtree for
  * h2/h3 elements with ids (added by rehype-slug), renders them as a
- * click-to-scroll list, and tracks which heading is currently in view via
- * IntersectionObserver. Collapsible.
+ * click-to-scroll list, and tracks the currently-read section by scroll
+ * position.
+ *
+ * Why scroll-position instead of IntersectionObserver: IO with a narrow
+ * rootMargin loses the active state in the "between two headings" gap
+ * (no heading visible → observer empty → fallback fires → wrong section
+ * highlighted). The scroll-position model picks "the last heading whose
+ * top is at or above the activation line" — always defined, always
+ * correct.
  */
+const ACTIVATION_OFFSET_PX = 120;
+
 export default function PageToc() {
   const [headings, setHeadings] = useState<Heading[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [open, setOpen] = useState(true);
-  const observerRef = useRef<IntersectionObserver | null>(null);
 
   useEffect(() => {
     const prose = document.querySelector(".prose-reader");
     if (!prose) return;
-    const nodes = prose.querySelectorAll<HTMLHeadingElement>(
-      "h2[id], h3[id]",
-    );
+    const nodes = prose.querySelectorAll<HTMLHeadingElement>("h2[id], h3[id]");
     const found: Heading[] = [];
     for (const n of nodes) {
       const id = n.id;
@@ -30,39 +36,38 @@ export default function PageToc() {
       if (id && text) found.push({ id, text, level });
     }
     setHeadings(found);
-
     if (found.length === 0) return;
 
-    // Re-create the observer for the discovered headings.
-    observerRef.current?.disconnect();
-    const visible = new Set<string>();
-    observerRef.current = new IntersectionObserver(
-      (entries) => {
-        for (const e of entries) {
-          if (e.isIntersecting) visible.add(e.target.id);
-          else visible.delete(e.target.id);
+    let raf: number | null = null;
+    function update() {
+      raf = null;
+      let next: string | null = found[0]?.id ?? null;
+      for (const h of found) {
+        const el = document.getElementById(h.id);
+        if (!el) continue;
+        const top = el.getBoundingClientRect().top;
+        if (top <= ACTIVATION_OFFSET_PX) {
+          next = h.id;
+        } else {
+          break; // headings are in document order; first one below the line wins
         }
-        // Pick the earliest visible heading in document order so the active
-        // marker stays on the section the user is reading (not the last one
-        // that scrolled past).
-        if (visible.size > 0) {
-          const first = found.find((h) => visible.has(h.id));
-          if (first) setActiveId(first.id);
-        } else if (!activeId) {
-          // Edge case: page loaded scrolled past everything; default to first.
-          setActiveId(found[0]?.id ?? null);
-        }
-      },
-      { rootMargin: "-80px 0px -60% 0px", threshold: 0 },
-    );
-    for (const n of nodes) observerRef.current.observe(n);
-    // Initialize active to first heading.
-    if (!activeId) setActiveId(found[0]?.id ?? null);
+      }
+      setActiveId((prev) => (prev === next ? prev : next));
+    }
+    function onScroll() {
+      if (raf != null) return;
+      raf = requestAnimationFrame(update);
+    }
 
-    return () => observerRef.current?.disconnect();
-    // The discovered headings change per page; rerun if path-driven content
-    // remounts the component (Next does this on /read/[...slug] navigation).
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // Initial sync — handles fresh page loads at a #hash anchor.
+    update();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll);
+    return () => {
+      if (raf != null) cancelAnimationFrame(raf);
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
+    };
   }, []);
 
   if (headings.length === 0) return null;
@@ -71,8 +76,9 @@ export default function PageToc() {
     e.preventDefault();
     const el = document.getElementById(id);
     if (!el) return;
+    // Set active immediately for snappy UI; the scroll handler will keep
+    // it accurate as the smooth-scroll completes.
     setActiveId(id);
-    // Account for any fixed header — none here, but keep 8px breathing room.
     const top = el.getBoundingClientRect().top + window.scrollY - 8;
     window.scrollTo({ top, behavior: "smooth" });
     history.replaceState(null, "", `#${id}`);
