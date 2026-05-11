@@ -153,6 +153,23 @@ function migrate(db: Database.Database) {
       generated_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
 
+    -- Section completion (one-way). page_slug + section_anchor uniquely
+    -- identify a completion. section_anchor is NULL for whole-page marks
+    -- and the heading's rehype-slug id ("rigorous-statement", etc.) for
+    -- per-section marks. Side effects (glossary extraction, concept
+    -- promotion, progress-log) are recorded as JSON for audit.
+    CREATE TABLE IF NOT EXISTS section_completion (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      page_slug TEXT NOT NULL,
+      section_anchor TEXT,
+      section_title TEXT,
+      completed_at TEXT NOT NULL DEFAULT (datetime('now')),
+      side_effects TEXT,
+      UNIQUE(page_slug, section_anchor)
+    );
+    CREATE INDEX IF NOT EXISTS idx_section_completion_page
+      ON section_completion(page_slug);
+
     -- Full-text-search index over corpus nodes. Rebuilt by corpus-builder
     -- alongside corpus_node. Standalone (not contentless) so the indexed
     -- columns are stored verbatim and bm25 ranking can run.
@@ -248,6 +265,15 @@ export type ChatMessageRow = {
   concept_slug: string | null;
   tool_calls: string | null;
   created_at: string;
+};
+
+export type SectionCompletionRow = {
+  id: number;
+  page_slug: string;
+  section_anchor: string | null;
+  section_title: string | null;
+  completed_at: string;
+  side_effects: string | null;
 };
 
 export type CorpusNodeRow = {
