@@ -136,23 +136,3 @@ typos. The post-mortem reads this end-to-end.
 - After the lithium track has progressed substantively, do a
   post-mortem and synthesize the patterns into a reusable Claude Code
   skill for "from-zero domain learning" (Track 2).
-
-## 2026-05-10 — Completed modules 01 (Matter & Atoms), 02 (Atomic Structure), and 03 (Electric C
-
-**What we did:**
-Completed modules 01 (Matter & Atoms), 02 (Atomic Structure), and 03 (Electric Charge). Deep dive into fundamentals of charge, Coulomb's law, EM vs. gravity at atomic scale, fine-structure constant context. Multiple teach-backs with correct consequence predictions (e.g., effect of doubled elementary charge on atomic radius and binding energy).
-
-
-**Promoted:** 01-chemistry-fundamentals/electric-charge-what-charge-is-positive-negative-neutral, 01-chemistry-fundamentals/electric-charge-coulomb-s-law-in-plain-language, 01-chemistry-fundamentals/electric-charge-why-opposite-charges-attract-and-like-charges-repel, 01-chemistry-fundamentals/electric-charge-charge-as-a-conserved-quantity
-
----
-
-## 2026-05-10 — Jumped to phase 3 (physics of isotope separation) without completing chemistry-f
-
-**What we did:**
-Jumped to phase 3 (physics of isotope separation) without completing chemistry-fundamentals 05–06. Used corpus tools to extract ZPE → bond-strength chain from 06-isotopes. Worked separation-factor α definition, reduced-mass arithmetic, and ZPE-environment differences rigorously. Compared COLEX (equilibrium chemistry, α ≈ 1.05, ZPE in Li–O vs. Li–Hg bonds) and AVLIS (laser spectroscopy, α >> 10, isotope shift at 670.8 nm). Demonstrated consequence prediction: Li-Pb amalgam would give smaller α (heavier partner); Li-H chemistry would give larger α (lighter partner, maximum ZPE difference). Promoted 4 concepts to solid.
-
-
-**Promoted:** 03-lithium-isotope-separation/general-mass-difference-physics-why-17-is-a-lot-but-still-hard, 03-lithium-isotope-separation/general-separation-factor-α-what-it-means-and-typical-values, 03-lithium-isotope-separation/general-colex-mercury-amalgam-chemistry-history-environmental-issues, 03-lithium-isotope-separation/general-laser-methods-avlis-mlis
-
----

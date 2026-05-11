@@ -87,16 +87,16 @@ of it correctly.
 - ⏳ What water treatment is and why we do it
 - ⏳ Drinking water vs. wastewater vs. industrial
 - ⏳ Coagulation / flocculation / sedimentation
-- ⏳ What water treatment is and why we do it
 - ⏳ Filtration (sand, carbon, multimedia)
+- ⏳ What water treatment is and why we do it
 - ⏳ Disinfection (chlorine, UV, ozone)
 - ⏳ Ion exchange resins
-- ⏳ Drinking water vs. wastewater vs. industrial
 - ⏳ Membrane processes (MF / UF / NF / RO)
 - ⏳ Electrodialysis & capacitive deionization
+- ⏳ Drinking water vs. wastewater vs. industrial
 - ⏳ Distillation
-- ⏳ Coagulation / flocculation / sedimentation
 - ⏳ Why water-treatment unit ops are the right vocabulary for ion separation
+- ⏳ Coagulation / flocculation / sedimentation
 - ⏳ Filtration (sand, carbon, multimedia)
 - ⏳ Disinfection (chlorine, UV, ozone)
 - ⏳ Ion exchange resins
@@ -126,11 +126,11 @@ of it correctly.
 - ⏳ Industrial / geopolitical context (who supplies Li-6, fusion implications)
 - ⏳ Why separate Li-6 from Li-7 (fusion, fission, scientific)
 - ⏳ The natural abundance ratio (~7.5% / 92.5%)
-- ✅ Mass-difference physics & why ~17% is "a lot" but still hard
-- ✅ Separation factor (α) — what it means and typical values
-- ✅ COLEX (mercury amalgam) — chemistry, history, environmental issues
+- ⏳ Mass-difference physics & why ~17% is "a lot" but still hard
+- ⏳ Separation factor (α) — what it means and typical values
+- ⏳ COLEX (mercury amalgam) — chemistry, history, environmental issues
 - ⏳ Electromagnetic separation (calutron)
-- ✅ Laser methods (AVLIS, MLIS)
+- ⏳ Laser methods (AVLIS, MLIS)
 - ⏳ Distillation
 - ⏳ Chemical exchange without mercury
 - ⏳ Ion-exchange chromatography
@@ -148,4 +148,4 @@ what didn't, and the new confidence symbols promoted.)
 
 | Date | Covered | Promoted | Notes |
 |------|---------|----------|-------|
-| 2026-05-10 | Jumped to phase 3 (physics of isotope separation) without completing chemistry-fundamentals 05–06. Used corpus tools to  | 03-lithium-isotope-separation/general-mass-difference-physics-why-17-is-a-lot-but-still-hard, 03-lithium-isotope-separation/general-separation-factor-α-what-it-means-and-typical-values, 03-lithium-isotope-separation/general-colex-mercury-amalgam-chemistry-history-environmental-issues, 03-lithium-isotope-separation/general-laser-methods-avlis-mlis |  |
+| _(no sessions yet)_ | | | |

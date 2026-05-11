@@ -1,9 +1,49 @@
 import fs from "node:fs";
 import path from "node:path";
 import crypto from "node:crypto";
-import { CONTENT_DIR, PHASE_DIRS } from "./paths";
+import {
+  CONTENT_DIR,
+  PHASE_DIRS,
+  GLOSSARY_PATH,
+  KNOWLEDGE_TRACKER_PATH,
+  QA_PATH,
+  PROGRESS_LOG_PATH,
+} from "./paths";
 import { getDb, type ConceptStatus, type PageRow } from "./db";
 import { slugify } from "./slug";
+
+/**
+ * User-data tracking files (.env.example pattern). The seed templates live
+ * at `*.example.md` and are committed; the live `*.md` files are gitignored
+ * and auto-copied from the template on first run.
+ */
+const USER_DATA_FILES = [
+  GLOSSARY_PATH,
+  KNOWLEDGE_TRACKER_PATH,
+  QA_PATH,
+  PROGRESS_LOG_PATH,
+];
+
+export function bootstrapUserData(): { created: string[]; skipped: string[] } {
+  const created: string[] = [];
+  const skipped: string[] = [];
+  for (const live of USER_DATA_FILES) {
+    if (fs.existsSync(live)) {
+      skipped.push(live);
+      continue;
+    }
+    const example = live.replace(/\.md$/, ".example.md");
+    if (!fs.existsSync(example)) {
+      // No template available — leave it; the individual regenerate*/append*
+      // functions will create a fresh file with their own initial header.
+      continue;
+    }
+    fs.mkdirSync(path.dirname(live), { recursive: true });
+    fs.copyFileSync(example, live);
+    created.push(live);
+  }
+  return { created, skipped };
+}
 
 export type DiscoveredPage = {
   slug: string;
@@ -231,6 +271,7 @@ export function listConcepts() {
 }
 
 export function ensureSeeded() {
+  bootstrapUserData();
   const db = getDb();
   const pageCount = (db.prepare("SELECT COUNT(*) AS n FROM pages").get() as { n: number }).n;
   if (pageCount === 0) syncPagesToDb();
