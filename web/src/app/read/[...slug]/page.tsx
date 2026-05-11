@@ -40,7 +40,7 @@ export default async function ReadPage({ params }: { params: Promise<Params> }) 
 
   return (
     <div className="grid grid-cols-[minmax(0,1fr)_360px] min-h-screen">
-      <div className="px-8 py-6 max-w-3xl">
+      <div className="px-6 py-6">
         <div className="text-[0.72rem] uppercase tracking-widest text-[var(--color-muted)] mb-1">
           Phase {page.phase_number} · <span className="capitalize">{page.phase_id.replace(/^\d+-/, "").replace(/-/g, " ")}</span>
         </div>

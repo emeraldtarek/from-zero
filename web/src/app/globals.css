@@ -36,7 +36,7 @@ html, body {
 
 /* Markdown reading typography */
 .prose-reader {
-  max-width: 72ch;
+  max-width: 88ch;
   font-size: 1.0625rem;
   line-height: 1.7;
   /* Long URLs and tokens shouldn't overflow into the chat rail. */
