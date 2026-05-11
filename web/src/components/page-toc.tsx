@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 type Heading = { id: string; text: string; level: number };
 
@@ -23,6 +23,17 @@ export default function PageToc() {
   const [headings, setHeadings] = useState<Heading[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [open, setOpen] = useState(true);
+  const itemRefs = useRef<Map<string, HTMLAnchorElement>>(new Map());
+
+  // Whenever the active section changes, scroll the TOC's inner scroller
+  // (the <ul>) so the active item stays in view. `block: "nearest"` is a
+  // no-op when the item is already visible, so this only fires when the
+  // active item just scrolled off the TOC's viewport.
+  useEffect(() => {
+    if (!activeId) return;
+    const el = itemRefs.current.get(activeId);
+    el?.scrollIntoView({ block: "nearest", inline: "nearest" });
+  }, [activeId]);
 
   useEffect(() => {
     const prose = document.querySelector(".prose-reader");
@@ -102,6 +113,10 @@ export default function PageToc() {
           return (
             <li key={h.id}>
               <a
+                ref={(node) => {
+                  if (node) itemRefs.current.set(h.id, node);
+                  else itemRefs.current.delete(h.id);
+                }}
                 href={`#${h.id}`}
                 onClick={(e) => jump(h.id, e)}
                 className={[
