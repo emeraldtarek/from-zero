@@ -1,12 +1,9 @@
-{
-  email tarek.kekhia@emeraldlake.io
-}
-
 from-zero.emeraldlake.io {
+  tls /etc/caddy/tls/origin.pem /etc/caddy/tls/origin.key
+
   encode zstd gzip
   reverse_proxy 127.0.0.1:3717
 
-  # Sensible defaults
   request_body {
     max_size 5MB
   }

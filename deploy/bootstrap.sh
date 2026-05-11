@@ -133,6 +133,7 @@ Next steps:
 
      sudo -u ${APP_USER} ssh-keygen -t ed25519 -f /home/${APP_USER}/.ssh/id_ed25519 -N ''
      sudo -u ${APP_USER} cat /home/${APP_USER}/.ssh/id_ed25519.pub >> /home/${APP_USER}/.ssh/authorized_keys
+     chown ${APP_USER}:${APP_USER} /home/${APP_USER}/.ssh/authorized_keys
      sudo -u ${APP_USER} chmod 600 /home/${APP_USER}/.ssh/authorized_keys
      sudo -u ${APP_USER} cat /home/${APP_USER}/.ssh/id_ed25519       # private — paste into GH secret SSH_KEY
 

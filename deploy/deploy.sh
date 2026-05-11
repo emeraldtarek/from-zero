@@ -46,4 +46,4 @@ echo "==> [deploy] restart lithium.service"
 sudo systemctl restart lithium
 
 echo "==> [deploy] done"
-sudo systemctl --no-pager --lines=10 status lithium || true
+systemctl --no-pager --lines=10 status lithium || true
