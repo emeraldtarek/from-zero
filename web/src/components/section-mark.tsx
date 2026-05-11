@@ -116,9 +116,9 @@ export default function SectionMark({
     <button
       onClick={run}
       title="Mark this section complete (adds glossary terms, updates progress)"
-      className="inline-flex items-center gap-1 text-[0.7rem] font-sans px-1.5 py-0.5 rounded text-[var(--color-muted)] hover:text-[var(--color-ink)] border border-[var(--color-rule)] hover:border-[var(--color-ink)] align-middle opacity-0 group-hover:opacity-100 transition-opacity"
+      className="inline-flex items-center gap-1 text-[0.7rem] font-sans px-1.5 py-0.5 rounded text-[var(--color-muted)] hover:text-[var(--color-ink)] border border-[var(--color-rule)] hover:border-[var(--color-ink)] align-middle"
     >
-      mark ✓
+      mark completed
     </button>
   );
 }
