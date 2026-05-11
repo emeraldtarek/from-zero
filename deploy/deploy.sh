@@ -35,12 +35,27 @@ echo "==> [deploy] next build"
 NEXT_TELEMETRY_DISABLED=1 npm run build
 
 echo "==> [deploy] re-ingest curriculum into SQLite"
-# Run ingest with the same env the systemd unit uses, so paths line up.
+# `npm run ingest` now also: bootstraps the user-data live files from
+# their .example.md siblings, builds the corpus_node + corpus_fts tree
+# (PageIndex-style nav index), and regenerates the live mirror files.
 set -a
 # shellcheck disable=SC1090
 source "${ENV_FILE}"
 set +a
 npm run ingest
+
+echo "==> [deploy] (re)generate LLM summaries for corpus nodes"
+# Idempotent — skips any node whose content_hash already has a cached
+# summary. Falls back gracefully when auth is missing.
+# Disable entirely with LITHIUM_SKIP_SUMMARIZE=1 in the env file.
+if [ "${LITHIUM_SKIP_SUMMARIZE:-0}" = "1" ]; then
+  echo "    LITHIUM_SKIP_SUMMARIZE=1 set, skipping"
+elif [ -z "${ANTHROPIC_API_KEY:-}" ] && [ -z "${CLAUDE_CODE_OAUTH_TOKEN:-}" ]; then
+  echo "    no ANTHROPIC_API_KEY or CLAUDE_CODE_OAUTH_TOKEN — skipping (app uses first-sentence summaries)"
+else
+  # Soft-fail: a transient auth/rate-limit error must not block the deploy.
+  npm run summarize || echo "    [warn] summarize failed, continuing deploy"
+fi
 
 echo "==> [deploy] restart lithium.service"
 sudo systemctl restart lithium
