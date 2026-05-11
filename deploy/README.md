@@ -9,11 +9,18 @@ deploying on every push to `main`.
 
 | File                  | Purpose                                                    |
 |-----------------------|------------------------------------------------------------|
-| `bootstrap.sh`        | One-shot system bootstrap. Run as root on a fresh server.  |
+| `bootstrap.sh`        | One-shot system bootstrap. Run as root on a fresh server. Leaves Caddy on default config; TLS arrives via the harden playbook. |
 | `deploy.sh`           | Idempotent deploy. Run as `lithium` user. Called by GHA.   |
+| `install-origin-cert.sh` | Installs a Cloudflare Origin CA cert + the project Caddyfile on the box. Verifies cert/key pair match first. |
+| `lock-origin-to-cloudflare.sh` | Replaces wide-open ufw 80/443 rules with allow-lists scoped to Cloudflare's published IP ranges. |
 | `lithium.service`     | systemd unit for the Next.js process.                      |
-| `Caddyfile`           | Reverse proxy + auto-TLS for the domain.                   |
+| `Caddyfile`           | Reverse proxy + Cloudflare Origin CA TLS for the domain.   |
 | `lithium.env.example` | Template for `/etc/lithium/lithium.env` (secrets live here).|
+
+For the end-to-end Cloudflare hardening sequence (Origin CA + Full strict +
+orange-cloud + UFW lockdown + Zero Trust Access), see the project skill at
+[`.claude/skills/cloudflare-harden/SKILL.md`](../.claude/skills/cloudflare-harden/SKILL.md).
+In Claude Code, say "harden the box" to invoke it.
 
 ## Architecture
 
@@ -32,10 +39,11 @@ during deploy never touches the running app's data.
 
 ## Bring-up — one time
 
-### 1. DNS
+### 1. DNS (grey cloud, temporary)
 
 Point an `A` record for `from-zero.emeraldlake.io` at the Hetzner box's
-public IP. Caddy fetches a Let's Encrypt cert on first request.
+public IP. Start in **DNS-only (grey cloud)** mode — the hardening
+playbook flips it to proxied later, once the Origin CA cert is in place.
 
 ### 2. System bootstrap
 
@@ -51,7 +59,10 @@ ssh root@<server-ip> bash /tmp/deploy/bootstrap.sh
 
 This installs Node 20, Caddy, build tools, creates the `lithium` user,
 state dirs, swap, ufw rules, sudoers entry, and drops the systemd unit
-and Caddyfile into place.
+in place. It intentionally leaves Caddy on its default config — the
+project Caddyfile references an Origin CA cert that doesn't exist yet,
+so installing the Caddyfile here would crash Caddy. TLS arrives via the
+harden playbook in step 7.
 
 ### 3. Generate the deploy SSH key (on the server)
 
@@ -100,7 +111,24 @@ Watch logs:
 sudo journalctl -u lithium -f
 ```
 
-Visit <https://from-zero.emeraldlake.io>.
+The app is now listening on `127.0.0.1:3717` but not reachable from the
+internet yet — Caddy is still on its default config.
+
+### 7. Cloudflare hardening
+
+Open this repo in Claude Code and say **"harden the box"**, or follow
+[`.claude/skills/cloudflare-harden/SKILL.md`](../.claude/skills/cloudflare-harden/SKILL.md)
+manually. The playbook walks through:
+
+1. Generate Origin CA cert (RSA 2048, valid 15 years) via Cloudflare MCP.
+2. Install cert + Caddyfile on the box (`deploy/install-origin-cert.sh`).
+3. Set Cloudflare SSL/TLS mode to **Full (strict)**.
+4. Flip DNS to **proxied (orange cloud)**.
+5. Lock UFW to Cloudflare IP ranges only (`deploy/lock-origin-to-cloudflare.sh`).
+6. (Optional) Add a **Cloudflare Access** application + policy so visitors
+   must authenticate before any request reaches the origin.
+
+After this, visit <https://from-zero.emeraldlake.io>.
 
 ## Day-2
 

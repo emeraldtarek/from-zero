@@ -108,9 +108,14 @@ cp "$(dirname "$0")/lithium.service" /etc/systemd/system/lithium.service
 systemctl daemon-reload
 systemctl enable lithium.service
 
-echo "==> Installing Caddyfile"
-cp "$(dirname "$0")/Caddyfile" /etc/caddy/Caddyfile
-systemctl restart caddy
+echo "==> Caddy left at its default config"
+# The project Caddyfile uses /etc/caddy/tls/origin.{pem,key} (Cloudflare
+# Origin CA cert). Those files don't exist on a fresh box, so installing the
+# Caddyfile here would crash Caddy. Operator installs cert + Caddyfile
+# together via deploy/install-origin-cert.sh as part of the
+# `.claude/skills/cloudflare-harden` playbook. Caddy stays on its default
+# config until then.
+systemctl enable caddy >/dev/null 2>&1 || true
 
 echo "==> Seeding env file at ${ENV_FILE} (chmod 600, owner ${APP_USER})"
 if [ ! -f "${ENV_FILE}" ]; then
@@ -126,8 +131,9 @@ Bootstrap complete.
 
 Next steps:
 
-1. Point DNS A-record  ${DOMAIN}  →  this server's IP. Caddy will fetch a
-   Let's Encrypt cert automatically on the next request.
+1. Point DNS A-record  ${DOMAIN}  →  this server's IP.
+   Start in DNS-only (grey cloud) mode; the cloudflare-harden playbook
+   flips it to proxied later.
 
 2. Generate a deploy SSH key on this box (as root or as ${APP_USER}):
 
@@ -135,7 +141,7 @@ Next steps:
      sudo -u ${APP_USER} cat /home/${APP_USER}/.ssh/id_ed25519.pub >> /home/${APP_USER}/.ssh/authorized_keys
      chown ${APP_USER}:${APP_USER} /home/${APP_USER}/.ssh/authorized_keys
      sudo -u ${APP_USER} chmod 600 /home/${APP_USER}/.ssh/authorized_keys
-     sudo -u ${APP_USER} cat /home/${APP_USER}/.ssh/id_ed25519       # private — paste into GH secret SSH_KEY
+     sudo -u ${APP_USER} cat /home/${APP_USER}/.ssh/id_ed25519       # paste into GH secret SSH_KEY
 
 3. Add these GitHub repository secrets at
    https://github.com/emeraldtarek/from-zero/settings/secrets/actions:
@@ -156,7 +162,18 @@ Next steps:
        bash deploy/deploy.sh
      '
 
-6. From now on, every push to main triggers GH Actions → SSH → deploy.sh.
+   App listens on 127.0.0.1:3717 but isn't reachable yet — Caddy is still
+   on its default config.
+
+6. Harden with Cloudflare. In Claude Code, say "harden the box" or run the
+   playbook in .claude/skills/cloudflare-harden/SKILL.md. It walks through:
+     - Origin CA cert generation + install via deploy/install-origin-cert.sh
+     - Setting SSL/TLS mode to Full (strict)
+     - Flipping DNS to proxied
+     - Locking UFW to Cloudflare IPs via deploy/lock-origin-to-cloudflare.sh
+     - (optional) Adding a Cloudflare Access gate
+
+7. From now on, every push to main triggers GH Actions → SSH → deploy.sh.
 
 App will be live at:  https://${DOMAIN}
 ==============================================================================
